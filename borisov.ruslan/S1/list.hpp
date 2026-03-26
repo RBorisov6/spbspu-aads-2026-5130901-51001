@@ -265,8 +265,40 @@ bool LCIter<T>::operator!=(const LCIter& other) const {
   return !(*this == other);
 }
 
+template <class T>
+List<T>::List()
+  : head_(nullptr)
+  , tail_(nullptr)
+  , size_(0)
+{}
+
+template <class T>
+List<T>::List(const List& other)
+  : head_(nullptr)
+  , tail_(nullptr)
+  , size_(0)
+{
+  for (const_iterator it = other.begin(); it != other.end(); ++it) {
+    push_back(*it);
+  }
 }
 
-#include "list.cpp"
+template <class T>
+List<T>::List(List&& other) noexcept
+  : head_(other.head_)
+  , tail_(other.tail_)
+  , size_(other.size_)
+{
+  other.head_ = nullptr;
+  other.tail_ = nullptr;
+  other.size_ = 0;
+}
+
+template <class T>
+bool List<T>::empty() const {
+  return size_ == 0;
+}
+
+}
 
 #endif
