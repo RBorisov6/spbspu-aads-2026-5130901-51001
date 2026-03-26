@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(test_iterator_backward) {
 BOOST_AUTO_TEST_CASE(test_const_iterator) {
   borisov::List<int> lst;
   lst.push_back(42);
-  borisov::const List<int>& const_lst = lst;
+  const borisov::List<int>& const_lst = lst;
   borisov::List<int>::const_iterator cit = const_lst.begin();
   BOOST_CHECK_EQUAL(*cit, 42);
   ++cit;
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(test_move_constructor) {
   borisov::List<int> a;
   a.push_back(1);
   a.push_back(2);
-  borisov::List<int> b(static_cast<List<int>&&>(a));
+  borisov::List<int> b(static_cast<borisov::List<int>&&>(a));
   BOOST_CHECK(a.empty());
   BOOST_CHECK_EQUAL(b.size(), 2u);
   borisov::List<int>::iterator it = b.begin();
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(test_move_assignment) {
   borisov::List<int> a;
   a.push_back(1);
   borisov::List<int> b;
-  b = static_cast<List<int>&&>(a);
+  b = static_cast<borisov::List<int>&&>(a);
   BOOST_CHECK(a.empty());
   BOOST_CHECK_EQUAL(b.size(), 1u);
   BOOST_CHECK_EQUAL(b.front(), 1);
