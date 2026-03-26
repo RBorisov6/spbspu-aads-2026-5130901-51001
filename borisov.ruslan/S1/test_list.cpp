@@ -69,3 +69,46 @@ BOOST_AUTO_TEST_CASE(test_pop_back) {
   lst.pop_back();
   BOOST_CHECK(lst.empty());
 }
+
+BOOST_AUTO_TEST_CASE(test_iterator_forward) {
+  List<int> lst;
+  for (int i = 0; i < 5; ++i) {
+    lst.push_back(i);
+  }
+  List<int>::iterator it = lst.begin();
+  int expected = 0;
+  while (it != lst.end()) {
+    BOOST_CHECK_EQUAL(*it, expected);
+    ++expected;
+    ++it;
+  }
+  BOOST_CHECK_EQUAL(expected, 5);
+}
+
+BOOST_AUTO_TEST_CASE(test_iterator_backward) {
+  List<int> lst;
+  for (int i = 0; i < 5; ++i) {
+    lst.push_back(i);
+  }
+  List<int>::iterator it = lst.end();
+  --it;
+  int expected = 4;
+  while (true) {
+    BOOST_CHECK_EQUAL(*it, expected);
+    if (expected == 0) {
+      break;
+    }
+    --expected;
+    --it;
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_const_iterator) {
+  List<int> lst;
+  lst.push_back(42);
+  const List<int>& const_lst = lst;
+  List<int>::const_iterator cit = const_lst.begin();
+  BOOST_CHECK_EQUAL(*cit, 42);
+  ++cit;
+  BOOST_CHECK(cit == const_lst.end());
+}
