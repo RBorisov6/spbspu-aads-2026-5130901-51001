@@ -1,9 +1,14 @@
-#ifndef LIST_HPP
-#define LIST_HPP
+#ifndef BORISOV_LIST_HPP
+#define BORISOV_LIST_HPP
 
 #include <cstddef>
+#include <stdexcept>
+#include <utility>
 
 namespace borisov {
+
+template <class T> class LIter;
+template <class T> class LCIter;
 
 template <class T>
 class List {
