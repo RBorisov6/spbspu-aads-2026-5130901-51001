@@ -429,6 +429,36 @@ const T& List<T>::back() const {
   return tail_->data;
 }
 
+template <class T>
+typename List<T>::iterator List<T>::begin() {
+  return iterator(head_);
+}
+
+template <class T>
+typename List<T>::iterator List<T>::end() {
+  return iterator(nullptr);
+}
+
+template <class T>
+typename List<T>::const_iterator List<T>::begin() const {
+  return const_iterator(head_);
+}
+
+template <class T>
+typename List<T>::const_iterator List<T>::end() const {
+  return const_iterator(nullptr);
+}
+
+template <class T>
+typename List<T>::const_iterator List<T>::cbegin() const {
+  return const_iterator(head_);
+}
+
+template <class T>
+typename List<T>::const_iterator List<T>::cend() const {
+  return const_iterator(nullptr);
+}
+
 }
 
 #endif
