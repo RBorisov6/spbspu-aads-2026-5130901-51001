@@ -392,6 +392,43 @@ void List<T>::pop_back() {
   --size_;
 }
 
+template <class T>
+std::size_t List<T>::size() const {
+  return size_;
+}
+
+template <class T>
+T& List<T>::front() {
+  if (empty()) {
+    throw std::logic_error("front on empty list");
+  }
+  return head_->data;
+}
+
+template <class T>
+const T& List<T>::front() const {
+  if (empty()) {
+    throw std::logic_error("front on empty list");
+  }
+  return head_->data;
+}
+
+template <class T>
+T& List<T>::back() {
+  if (empty()) {
+    throw std::logic_error("back on empty list");
+  }
+  return tail_->data;
+}
+
+template <class T>
+const T& List<T>::back() const {
+  if (empty()) {
+    throw std::logic_error("back on empty list");
+  }
+  return tail_->data;
+}
+
 }
 
 #endif
