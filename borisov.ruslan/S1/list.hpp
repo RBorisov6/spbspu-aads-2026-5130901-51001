@@ -299,6 +299,18 @@ bool List<T>::empty() const {
   return size_ == 0;
 }
 
+template <class T>
+List<T>::~List() {
+  clear();
+}
+
+template <class T>
+void List<T>::clear() {
+  while (!empty()) {
+    pop_front();
+  }
+}
+
 }
 
 #endif
