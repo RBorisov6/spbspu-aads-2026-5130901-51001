@@ -5,7 +5,7 @@
 
 namespace borisov {
 
-template <typename T>
+template <class T>
 class List {
 private:
 	struct Node {
@@ -13,7 +13,7 @@ private:
 		Node* prev;
 		Node* next;
 
-		template <typename... Args>
+		template <class... Args>
 		explicit Node(Args&&... args);
 	};
 
@@ -31,6 +31,34 @@ public:
 	List(List&&) = delete;
 	List& operator=(const List&) = delete;
   List& operator=(List&&) = delete;
+};
+
+template <class T>
+class LIter {
+    friend class List<T>;
+
+public:
+    LIter();
+    LIter(const LIter& other);
+    LIter& operator=(const LIter& other);
+
+    T& operator*() const;
+    T* operator->() const;
+
+    LIter& operator++();
+    LIter operator++(int);
+
+    LIter& operator--();
+    LIter operator--(int);
+
+    bool operator==(const LIter& other) const;
+    bool operator!=(const LIter& other) const;
+
+private:
+    typedef typename List<T>::Node Node;
+    Node* node_;
+
+    explicit LIter(Node* node);
 };
 
 }
