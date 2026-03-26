@@ -184,3 +184,51 @@ BOOST_AUTO_TEST_CASE(test_erase_end) {
   BOOST_CHECK_EQUAL(lst.size(), 1u);
   BOOST_CHECK_EQUAL(lst.front(), 10);
 }
+
+BOOST_AUTO_TEST_CASE(test_copy_constructor) {
+  List<int> original;
+  original.push_back(1);
+  original.push_back(2);
+  List<int> copy(original);
+  BOOST_CHECK_EQUAL(copy.size(), 2u);
+  List<int>::iterator it = copy.begin();
+  BOOST_CHECK_EQUAL(*it, 1);
+  ++it;
+  BOOST_CHECK_EQUAL(*it, 2);
+  copy.push_back(3);
+  BOOST_CHECK_EQUAL(original.size(), 2u);
+}
+
+BOOST_AUTO_TEST_CASE(test_copy_assignment) {
+  List<int> a;
+  a.push_back(1);
+  List<int> b;
+  b = a;
+  BOOST_CHECK_EQUAL(b.size(), 1u);
+  BOOST_CHECK_EQUAL(b.front(), 1);
+  a.push_back(2);
+  BOOST_CHECK_EQUAL(b.size(), 1u);
+}
+
+BOOST_AUTO_TEST_CASE(test_move_constructor) {
+  List<int> a;
+  a.push_back(1);
+  a.push_back(2);
+  List<int> b(static_cast<List<int>&&>(a));
+  BOOST_CHECK(a.empty());
+  BOOST_CHECK_EQUAL(b.size(), 2u);
+  List<int>::iterator it = b.begin();
+  BOOST_CHECK_EQUAL(*it, 1);
+  ++it;
+  BOOST_CHECK_EQUAL(*it, 2);
+}
+
+BOOST_AUTO_TEST_CASE(test_move_assignment) {
+  List<int> a;
+  a.push_back(1);
+  List<int> b;
+  b = static_cast<List<int>&&>(a);
+  BOOST_CHECK(a.empty());
+  BOOST_CHECK_EQUAL(b.size(), 1u);
+  BOOST_CHECK_EQUAL(b.front(), 1);
+}
