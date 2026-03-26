@@ -10,3 +10,11 @@ BOOST_AUTO_TEST_CASE(test_constructor_and_empty) {
   BOOST_CHECK_EQUAL(lst.size(), 0u);
 }
 
+BOOST_AUTO_TEST_CASE(test_clear) {
+  List<int> lst;
+  lst.push_front(1);
+  lst.push_front(2);
+  lst.clear();
+  BOOST_CHECK(lst.empty());
+  BOOST_CHECK_EQUAL(lst.size(), 0u);
+}
