@@ -1,3 +1,4 @@
+#ifdef BUILD_TESTS
 #define BOOST_TEST_MODULE ListTest
 #include <boost/test/unit_test.hpp>
 #include "list.hpp"
