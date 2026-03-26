@@ -24,3 +24,5 @@ BOOST_AUTO_TEST_CASE(test_example_from_task) {
 
   BOOST_CHECK_EQUAL(output.str(), expected);
 }
+
+#endif
