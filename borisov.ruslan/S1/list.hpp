@@ -7,30 +7,60 @@ namespace borisov {
 
 template <class T>
 class List {
-private:
-struct Node {
-  T data;
-  Node* prev;
-  Node* next;
-
-  template <class... Args>
-  explicit Node(Args&&... args);
-};
-
-Node* m_head;
-Node* m_tail;
-std::size_t m_size;
-
-void create_sentinel_nodes();
-
 public:
-List();
-~List();
+  using iterator = LIter<T>;
+  using const_iterator = LCIter<T>;
 
-List(const List&) = delete;
-List(List&&) = delete;
-List& operator=(const List&) = delete;
-List& operator=(List&&) = delete;
+  List();
+  List(const List& other);
+  List(List&& other) noexcept;
+  ~List();
+
+  List& operator=(const List& other);
+  List& operator=(List&& other) noexcept;
+
+  void push_front(const T& value);
+  void push_back(const T& value);
+  void pop_front();
+  void pop_back();
+
+  bool empty() const;
+  std::size_t size() const;
+  void clear();
+
+  T& front();
+  const T& front() const;
+  T& back();
+  const T& back() const;
+
+  iterator begin();
+  iterator end();
+  const_iterator begin() const;
+  const_iterator end() const;
+  const_iterator cbegin() const;
+  const_iterator cend() const;
+
+  iterator insert(iterator pos, const T& value);
+  iterator erase(iterator pos);
+
+private:
+  struct Node {
+    T data;
+    Node* prev;
+    Node* next;
+
+    Node(const T& val)
+      : data(val)
+      , prev(nullptr)
+      , next(nullptr)
+    {}
+  };
+
+  Node* head_;
+  Node* tail_;
+  std::size_t size_;
+
+  void swap(List& other) noexcept;
 };
 
 template <class T>
