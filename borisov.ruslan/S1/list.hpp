@@ -311,6 +311,87 @@ void List<T>::clear() {
   }
 }
 
+template <class T>
+List<T>& List<T>::operator=(const List& other) {
+  if (this != &other) {
+    List tmp(other);
+    swap(tmp);
+  }
+  return *this;
+}
+
+template <class T>
+List<T>& List<T>::operator=(List&& other) noexcept {
+  if (this != &other) {
+    clear();
+    head_ = other.head_;
+    tail_ = other.tail_;
+    size_ = other.size_;
+    other.head_ = nullptr;
+    other.tail_ = nullptr;
+    other.size_ = 0;
+  }
+  return *this;
+}
+
+template <class T>
+void List<T>::push_front(const T& value) {
+  Node* node = new Node(value);
+  if (empty()) {
+    head_ = tail_ = node;
+  } else {
+    node->next = head_;
+    head_->prev = node;
+    head_ = node;
+  }
+  ++size_;
+}
+
+template <class T>
+void List<T>::push_back(const T& value) {
+  Node* node = new Node(value);
+  if (empty()) {
+    head_ = tail_ = node;
+  } else {
+    node->prev = tail_;
+    tail_->next = node;
+    tail_ = node;
+  }
+  ++size_;
+}
+
+template <class T>
+void List<T>::pop_front() {
+  if (empty()) {
+    throw std::logic_error("pop_front on empty list");
+  }
+  Node* old_head = head_;
+  head_ = head_->next;
+  if (head_ != nullptr) {
+    head_->prev = nullptr;
+  } else {
+    tail_ = nullptr;
+  }
+  delete old_head;
+  --size_;
+}
+
+template <class T>
+void List<T>::pop_back() {
+  if (empty()) {
+    throw std::logic_error("pop_back on empty list");
+  }
+  Node* old_tail = tail_;
+  tail_ = tail_->prev;
+  if (tail_ != nullptr) {
+    tail_->next = nullptr;
+  } else {
+    head_ = nullptr;
+  }
+  delete old_tail;
+  --size_;
+}
+
 }
 
 #endif
