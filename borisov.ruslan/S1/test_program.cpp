@@ -1,8 +1,9 @@
 #ifdef BUILD_TESTS
+
 #define BOOST_TEST_MODULE ProgramTest
 #include <boost/test/unit_test.hpp>
 #include <sstream>
-#include "run.hpp"
+#include "../run.hpp"
 
 BOOST_AUTO_TEST_CASE(test_example_from_task) {
   std::istringstream input(
@@ -12,8 +13,9 @@ BOOST_AUTO_TEST_CASE(test_example_from_task) {
     "fourth 4 4\n"
   );
   std::ostringstream output;
+  std::ostringstream error;
 
-  borisov::run(input, output);
+  borisov::run(input, output, error);
 
   std::string expected =
     "first second third fourth\n"
