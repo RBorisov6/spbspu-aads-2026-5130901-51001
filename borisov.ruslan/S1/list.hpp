@@ -459,6 +459,60 @@ typename List<T>::const_iterator List<T>::cend() const {
   return const_iterator(nullptr);
 }
 
+template <class T>
+typename List<T>::iterator List<T>::insert(iterator pos, const T& value) {
+  if (pos == begin()) {
+    push_front(value);
+    return begin();
+  }
+  if (pos == end()) {
+    push_back(value);
+    iterator it = end();
+    --it;
+    return it;
+  }
+  Node* curr = pos.node_;
+  Node* prev = curr->prev;
+  Node* node = new Node(value);
+  node->prev = prev;
+  node->next = curr;
+  prev->next = node;
+  curr->prev = node;
+  ++size_;
+  return iterator(node);
+}
+
+template <class T>
+typename List<T>::iterator List<T>::erase(iterator pos) {
+  if (pos == end()) {
+    return end();
+  }
+  Node* curr = pos.node_;
+  iterator next_it = pos;
+  ++next_it;
+  if (curr == head_) {
+    pop_front();
+    return begin();
+  }
+  if (curr == tail_) {
+    pop_back();
+    return end();
+  }
+  curr->prev->next = curr->next;
+  curr->next->prev = curr->prev;
+  delete curr;
+  --size_;
+  return next_it;
+}
+
+template <class T>
+void List<T>::swap(List& other) noexcept {
+  using std::swap;
+  swap(head_, other.head_);
+  swap(tail_, other.tail_);
+  swap(size_, other.size_);
+}
+
 }
 
 #endif

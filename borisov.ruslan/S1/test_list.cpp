@@ -112,3 +112,75 @@ BOOST_AUTO_TEST_CASE(test_const_iterator) {
   ++cit;
   BOOST_CHECK(cit == const_lst.end());
 }
+
+BOOST_AUTO_TEST_CASE(test_insert_begin) {
+  List<int> lst;
+  lst.push_back(10);
+  List<int>::iterator it = lst.begin();
+  lst.insert(it, 5);
+  BOOST_CHECK_EQUAL(lst.size(), 2u);
+  BOOST_CHECK_EQUAL(lst.front(), 5);
+  BOOST_CHECK_EQUAL(lst.back(), 10);
+}
+
+BOOST_AUTO_TEST_CASE(test_insert_middle) {
+  List<int> lst;
+  lst.push_back(10);
+  lst.push_back(30);
+  List<int>::iterator it = lst.begin();
+  ++it;
+  lst.insert(it, 20);
+  BOOST_CHECK_EQUAL(lst.size(), 3u);
+  List<int>::iterator check = lst.begin();
+  BOOST_CHECK_EQUAL(*check, 10);
+  ++check;
+  BOOST_CHECK_EQUAL(*check, 20);
+  ++check;
+  BOOST_CHECK_EQUAL(*check, 30);
+}
+
+BOOST_AUTO_TEST_CASE(test_insert_end) {
+  List<int> lst;
+  lst.push_back(10);
+  List<int>::iterator it = lst.end();
+  lst.insert(it, 20);
+  BOOST_CHECK_EQUAL(lst.size(), 2u);
+  BOOST_CHECK_EQUAL(lst.front(), 10);
+  BOOST_CHECK_EQUAL(lst.back(), 20);
+}
+
+BOOST_AUTO_TEST_CASE(test_erase_begin) {
+  List<int> lst;
+  lst.push_back(10);
+  lst.push_back(20);
+  List<int>::iterator it = lst.begin();
+  lst.erase(it);
+  BOOST_CHECK_EQUAL(lst.size(), 1u);
+  BOOST_CHECK_EQUAL(lst.front(), 20);
+}
+
+BOOST_AUTO_TEST_CASE(test_erase_middle) {
+  List<int> lst;
+  lst.push_back(10);
+  lst.push_back(20);
+  lst.push_back(30);
+  List<int>::iterator it = lst.begin();
+  ++it;
+  lst.erase(it);
+  BOOST_CHECK_EQUAL(lst.size(), 2u);
+  List<int>::iterator check = lst.begin();
+  BOOST_CHECK_EQUAL(*check, 10);
+  ++check;
+  BOOST_CHECK_EQUAL(*check, 30);
+}
+
+BOOST_AUTO_TEST_CASE(test_erase_end) {
+  List<int> lst;
+  lst.push_back(10);
+  lst.push_back(20);
+  List<int>::iterator it = lst.end();
+  --it;
+  lst.erase(it);
+  BOOST_CHECK_EQUAL(lst.size(), 1u);
+  BOOST_CHECK_EQUAL(lst.front(), 10);
+}
