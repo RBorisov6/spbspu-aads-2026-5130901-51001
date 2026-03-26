@@ -1,2 +1,7 @@
-int main()
-{}
+#include "run.hpp"
+#include <iostream>
+
+int main() {
+  borisov::run(std::cin, std::cout);
+  return 0;
+}

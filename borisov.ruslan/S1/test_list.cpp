@@ -232,3 +232,4 @@ BOOST_AUTO_TEST_CASE(test_move_assignment) {
   BOOST_CHECK_EQUAL(b.size(), 1u);
   BOOST_CHECK_EQUAL(b.front(), 1);
 }
+
