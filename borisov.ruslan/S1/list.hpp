@@ -66,6 +66,9 @@ private:
   std::size_t size_;
 
   void swap(List& other) noexcept;
+
+  friend class LIter<T>;
+  friend class LCIter<T>;
 };
 
 template <class T>
