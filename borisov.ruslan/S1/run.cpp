@@ -35,9 +35,9 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
       continue;
     }
     List<int> numbers;
-    long long num;
+    unsigned long long num;
     while (iss >> num) {
-      if (num < INT_MIN || num > INT_MAX) {
+      if (num > static_cast<unsigned long long>(INT_MAX)) {
         err << "Error: number out of int range" << std::endl;
         std::exit(1);
       }
@@ -98,8 +98,24 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     columns.push_back(col);
   }
 
-  List<unsigned long long> sums;
   List< List<int> >::iterator col_it = columns.begin();
+  while (col_it != columns.end()) {
+    List<int>::iterator num_it = col_it->begin();
+    bool first_in_row = true;
+    while (num_it != col_it->end()) {
+      if (!first_in_row) {
+        out << ' ';
+      }
+      out << *num_it;
+      first_in_row = false;
+      ++num_it;
+    }
+    out << '\n';
+    ++col_it;
+  }
+
+  List<unsigned long long> sums;
+  col_it = columns.begin();
   bool overflow = false;
 
   while (col_it != columns.end()) {
