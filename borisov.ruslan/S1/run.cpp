@@ -9,7 +9,7 @@
 namespace borisov {
 
 void run(std::istream& in, std::ostream& out, std::ostream& err) {
-  using SequenceList = List< std::pair<std::string, List<unsigned long long> > >;
+  using SequenceList = List< std::pair<std::string, List<int> > >;
 
   SequenceList sequences;
 
@@ -24,8 +24,8 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     if (name.empty()) {
       continue;
     }
-    List<unsigned long long> numbers;
-    unsigned long long num;
+    List<int> numbers;
+    int num;
     while (iss >> num) {
       numbers.push_back(num);
     }
@@ -65,13 +65,13 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     return;
   }
 
-  List< List<unsigned long long> > columns;
+  List< List<int> > columns;
   for (std::size_t i = 0; i < max_len; ++i) {
-    List<unsigned long long> col;
+    List<int> col;
     seq_it = sequences.begin();
     while (seq_it != sequences.end()) {
       if (i < seq_it->second.size()) {
-        List<unsigned long long>::iterator num_it = seq_it->second.begin();
+        List<int>::iterator num_it = seq_it->second.begin();
         std::size_t j = 0;
         while (j < i) {
           ++num_it;
@@ -84,11 +84,11 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     columns.push_back(col);
   }
 
-  List<unsigned long long> sums;
-  List< List<unsigned long long> >::iterator col_it = columns.begin();
+  List<int> sums;
+  List< List<int> >::iterator col_it = columns.begin();
   while (col_it != columns.end()) {
-    unsigned long long sum = 0;
-    List<unsigned long long>::iterator num_it = col_it->begin();
+    int sum = 0;
+    List<int>::iterator num_it = col_it->begin();
     while (num_it != col_it->end()) {
       if (num_it != col_it->begin()) {
         out << ' ';
@@ -102,7 +102,7 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     ++col_it;
   }
 
-  List<unsigned long long>::iterator sum_it = sums.begin();
+  List<int>::iterator sum_it = sums.begin();
   while (sum_it != sums.end()) {
     if (sum_it != sums.begin()) {
       out << ' ';
