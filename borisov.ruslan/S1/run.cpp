@@ -6,8 +6,17 @@
 #include <utility>
 #include <cstdlib>
 #include <climits>
+#include <limits>
 
 namespace borisov {
+
+bool checkedSum(unsigned long long a, unsigned long long b, unsigned long long& res) {
+  if (b > std::numeric_limits<unsigned long long>::max() - a) {
+    return true;
+  }
+  res = a + b;
+  return false;
+}
 
 void run(std::istream& in, std::ostream& out, std::ostream& err) {
   using SequenceList = List< std::pair<std::string, List<int> > >;
@@ -89,25 +98,38 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     columns.push_back(col);
   }
 
-  List<int> sums;
+  List<unsigned long long> sums;
   List< List<int> >::iterator col_it = columns.begin();
+  bool overflow = false;
+
   while (col_it != columns.end()) {
-    int sum = 0;
+    unsigned long long sum = 0;
     List<int>::iterator num_it = col_it->begin();
     while (num_it != col_it->end()) {
-      if (num_it != col_it->begin()) {
-        out << ' ';
+      unsigned long long val = static_cast<unsigned long long>(*num_it);
+      if (checkedSum(sum, val, sum)) {
+        err << "Error: sum overflow" << std::endl;
+        overflow = true;
+        break;
       }
-      out << *num_it;
-      sum += *num_it;
       ++num_it;
     }
-    out << '\n';
+    if (overflow) {
+      break;
+    }
+    if (sum > static_cast<unsigned long long>(INT_MAX)) {
+      err << "Error: sum out of int range" << std::endl;
+      std::exit(1);
+    }
     sums.push_back(sum);
     ++col_it;
   }
 
-  List<int>::iterator sum_it = sums.begin();
+  if (overflow) {
+    std::exit(1);
+  }
+
+  List<unsigned long long>::iterator sum_it = sums.begin();
   while (sum_it != sums.end()) {
     if (sum_it != sums.begin()) {
       out << ' ';
