@@ -5,6 +5,7 @@
 #include <sstream>
 #include <utility>
 #include <cstdlib>
+#include <climits>
 
 namespace borisov {
 
@@ -25,11 +26,15 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
       continue;
     }
     List<int> numbers;
-    int num;
+    long long num;
     while (iss >> num) {
-      numbers.push_back(num);
+      if (num < INT_MIN || num > INT_MAX) {
+        err << "Error: number out of int range" << std::endl;
+        std::exit(1);
+      }
+      numbers.push_back(static_cast<int>(num));
     }
-    if (iss.fail()) {
+    if (iss.fail() && !iss.eof()) {
       err << "Error: invalid number format" << std::endl;
       std::exit(1);
     }
