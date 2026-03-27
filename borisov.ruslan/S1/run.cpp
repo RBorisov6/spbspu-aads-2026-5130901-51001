@@ -29,7 +29,7 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     while (iss >> num) {
       numbers.push_back(num);
     }
-    if (iss.fail() && !iss.eof()) {
+    if (iss.fail()) {
       err << "Error: invalid number format" << std::endl;
       std::exit(1);
     }
