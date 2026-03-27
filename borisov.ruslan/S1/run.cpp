@@ -20,7 +20,6 @@ bool checkedSum(unsigned long long a, unsigned long long b, unsigned long long& 
 
 void run(std::istream& in, std::ostream& out, std::ostream& err) {
   using SequenceList = List< std::pair<std::string, List<int> > >;
-
   SequenceList sequences;
 
   std::string line;
@@ -35,15 +34,17 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
       continue;
     }
     List<int> numbers;
-    unsigned long long num;
+    long long num;
+    bool has_number = false;
     while (iss >> num) {
-      if (num > static_cast<unsigned long long>(INT_MAX)) {
+      has_number = true;
+      if (num < INT_MIN || num > INT_MAX) {
         err << "Error: number out of int range" << std::endl;
         std::exit(1);
       }
       numbers.push_back(static_cast<int>(num));
     }
-    if (iss.fail() && !iss.eof()) {
+    if (iss.fail() && (!iss.eof() || has_number)) {
       err << "Error: invalid number format" << std::endl;
       std::exit(1);
     }
