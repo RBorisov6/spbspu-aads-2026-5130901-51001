@@ -1,17 +1,16 @@
 #include "run.hpp"
 #include "list.hpp"
 #include <iostream>
-#include <string>
 #include <sstream>
-#include <utility>
 #include <cstdlib>
 #include <climits>
 #include <limits>
 
 namespace borisov {
 
-bool checkedSum(unsigned long long a, unsigned long long b, unsigned long long& res) {
-  if (b > std::numeric_limits<unsigned long long>::max() - a) {
+bool checkedSum(long long a, long long b, long long& res) {
+  if ((b > 0 && a > std::numeric_limits<long long>::max() - b) ||
+      (b < 0 && a < std::numeric_limits<long long>::min() - b)) {
     return true;
   }
   res = a + b;
@@ -20,6 +19,7 @@ bool checkedSum(unsigned long long a, unsigned long long b, unsigned long long& 
 
 void run(std::istream& in, std::ostream& out, std::ostream& err) {
   using SequenceList = List< std::pair<std::string, List<int> > >;
+
   SequenceList sequences;
 
   std::string line;
@@ -35,16 +35,14 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     }
     List<int> numbers;
     long long num;
-    bool has_number = false;
     while (iss >> num) {
-      has_number = true;
       if (num < INT_MIN || num > INT_MAX) {
         err << "Error: number out of int range" << std::endl;
         std::exit(1);
       }
       numbers.push_back(static_cast<int>(num));
     }
-    if (iss.fail() && (!iss.eof() || has_number)) {
+    if (iss.fail() && !iss.eof()) {
       err << "Error: invalid number format" << std::endl;
       std::exit(1);
     }
@@ -115,15 +113,15 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     ++col_it;
   }
 
-  List<unsigned long long> sums;
+  List<long long> sums;
   col_it = columns.begin();
   bool overflow = false;
 
   while (col_it != columns.end()) {
-    unsigned long long sum = 0;
+    long long sum = 0;
     List<int>::iterator num_it = col_it->begin();
     while (num_it != col_it->end()) {
-      unsigned long long val = static_cast<unsigned long long>(*num_it);
+      long long val = static_cast<long long>(*num_it);
       if (checkedSum(sum, val, sum)) {
         err << "Error: sum overflow" << std::endl;
         overflow = true;
@@ -134,7 +132,7 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     if (overflow) {
       break;
     }
-    if (sum > static_cast<unsigned long long>(INT_MAX)) {
+    if (sum < INT_MIN || sum > INT_MAX) {
       err << "Error: sum out of int range" << std::endl;
       std::exit(1);
     }
@@ -146,7 +144,7 @@ void run(std::istream& in, std::ostream& out, std::ostream& err) {
     std::exit(1);
   }
 
-  List<unsigned long long>::iterator sum_it = sums.begin();
+  List<long long>::iterator sum_it = sums.begin();
   while (sum_it != sums.end()) {
     if (sum_it != sums.begin()) {
       out << ' ';
