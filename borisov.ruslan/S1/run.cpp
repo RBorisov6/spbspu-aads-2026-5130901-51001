@@ -55,15 +55,19 @@ List<Sequence> readInput(std::istream& in, std::ostream& err) {
     getWithoutSkips(in);
 
     while (!isEnd(in)) {
-      long long num = 0;
+      unsigned long long num = 0;
       if (in >> num) {
-        if (num < INT_MIN || num > INT_MAX) {
+        if (num > static_cast<unsigned long long>(INT_MAX)) {
           err << "Error: number out of int range" << std::endl;
           std::exit(1);
         }
         seq.nums.push_back(static_cast<int>(num));
       } else {
         in.clear();
+        if (!isEnd(in)) {
+          err << "Error: invalid number format" << std::endl;
+          std::exit(1);
+        }
         break;
       }
     }
