@@ -5,7 +5,7 @@
 
 namespace borisov {
 
-int run(std::istream& in, std::ostream& out, std::ostream& err);
+void run(std::istream& in, std::ostream& out, std::ostream& err);
 
 }
 
