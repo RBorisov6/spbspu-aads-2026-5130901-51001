@@ -8,151 +8,182 @@
 
 namespace borisov {
 
-bool checkedSum(long long a, long long b, long long& res) {
-  if ((b > 0 && a > std::numeric_limits<long long>::max() - b) ||
-      (b < 0 && a < std::numeric_limits<long long>::min() - b)) {
+struct Sequence {
+  std::string name;
+  List<int> nums;
+
+  explicit Sequence(const std::string& n) : name(n) {}
+};
+
+void getWithoutSkips(std::istream& in) {
+  while (in.peek() == ' ' || in.peek() == '\t') {
+    in.get();
+  }
+}
+
+bool isEnd(std::istream& in) {
+  int c = in.peek();
+  return c == '\n' || c == '\r' || c == std::istream::traits_type::eof();
+}
+
+void skipLine(std::istream& in) {
+  while (!isEnd(in)) {
+    in.get();
+  }
+  if (in.peek() == '\r') {
+    in.get();
+  }
+  if (in.peek() == '\n') {
+    in.get();
+  }
+}
+
+bool checkedSum(unsigned long long a, unsigned long long b, unsigned long long& res) {
+  if (b > std::numeric_limits<unsigned long long>::max() - a) {
     return true;
   }
   res = a + b;
   return false;
 }
 
-void run(std::istream& in, std::ostream& out, std::ostream& err) {
-  using SequenceList = List< std::pair<std::string, List<int> > >;
+List<Sequence> readInput(std::istream& in, std::ostream& err) {
+  List<Sequence> seqs;
+  std::string name;
 
-  SequenceList sequences;
+  while (in >> name) {
+    Sequence seq(name);
+    getWithoutSkips(in);
 
-  std::string line;
-  while (std::getline(in, line)) {
-    if (line.empty()) {
-      continue;
-    }
-    std::istringstream iss(line);
-    std::string name;
-    iss >> name;
-    if (name.empty()) {
-      continue;
-    }
-    List<int> numbers;
-    long long num;
-    while (iss >> num) {
-      if (num < INT_MIN || num > INT_MAX) {
-        err << "Error: number out of int range" << std::endl;
-        std::exit(1);
+    while (!isEnd(in)) {
+      long long num = 0;
+      if (in >> num) {
+        if (num < INT_MIN || num > INT_MAX) {
+          err << "Error: number out of int range" << std::endl;
+          std::exit(1);
+        }
+        seq.nums.push_back(static_cast<int>(num));
+      } else {
+        in.clear();
+        break;
       }
-      numbers.push_back(static_cast<int>(num));
     }
-    if (iss.fail() && !iss.eof()) {
-      err << "Error: invalid number format" << std::endl;
-      std::exit(1);
-    }
-    sequences.push_back(std::make_pair(name, numbers));
+    skipLine(in);
+    seqs.push_back(std::move(seq));
   }
+  return seqs;
+}
 
-  if (sequences.empty()) {
-    out << "0\n";
-    return;
-  }
-
-  SequenceList::iterator seq_it = sequences.begin();
-  while (seq_it != sequences.end()) {
-    if (seq_it != sequences.begin()) {
+void outputNames(const List<Sequence>& seqs, std::ostream& out) {
+  LCIter<Sequence> it = seqs.cbegin();
+  bool first = true;
+  for (; it != seqs.cend(); ++it) {
+    if (!first) {
       out << ' ';
     }
-    out << seq_it->first;
-    ++seq_it;
+    out << it->name;
+    first = false;
   }
   out << '\n';
+}
+
+int outputNums(const List<Sequence>& seqs, std::ostream& out, std::ostream& err) {
+  if (seqs.empty()) {
+    return 0;
+  }
 
   std::size_t max_len = 0;
-  seq_it = sequences.begin();
-  while (seq_it != sequences.end()) {
-    if (seq_it->second.size() > max_len) {
-      max_len = seq_it->second.size();
+  for (LCIter<Sequence> curr = seqs.cbegin(); curr != seqs.cend(); ++curr) {
+    if (curr->nums.size() > max_len) {
+      max_len = curr->nums.size();
     }
-    ++seq_it;
   }
 
   if (max_len == 0) {
     out << "0\n";
-    return;
+    return 0;
   }
 
-  List< List<int> > columns;
-  for (std::size_t i = 0; i < max_len; ++i) {
-    List<int> col;
-    seq_it = sequences.begin();
-    while (seq_it != sequences.end()) {
-      if (i < seq_it->second.size()) {
-        List<int>::iterator num_it = seq_it->second.begin();
-        std::size_t j = 0;
-        while (j < i) {
+  List<List<int>> columns;
+  for (std::size_t col = 0; col < max_len; ++col) {
+    List<int> column;
+    for (LCIter<Sequence> seq_it = seqs.cbegin(); seq_it != seqs.cend(); ++seq_it) {
+      if (col < seq_it->nums.size()) {
+        LCIter<int> num_it = seq_it->nums.cbegin();
+        for (std::size_t i = 0; i < col; ++i) {
           ++num_it;
-          ++j;
         }
-        col.push_back(*num_it);
+        column.push_back(*num_it);
       }
-      ++seq_it;
     }
-    columns.push_back(col);
+    columns.push_back(std::move(column));
   }
 
-  List< List<int> >::iterator col_it = columns.begin();
-  while (col_it != columns.end()) {
-    List<int>::iterator num_it = col_it->begin();
-    bool first_in_row = true;
-    while (num_it != col_it->end()) {
-      if (!first_in_row) {
+  for (LCIter<List<int>> col_it = columns.cbegin(); col_it != columns.cend(); ++col_it) {
+    bool first_in_col = true;
+    for (LCIter<int> num_it = col_it->cbegin(); num_it != col_it->cend(); ++num_it) {
+      if (!first_in_col) {
         out << ' ';
       }
       out << *num_it;
-      first_in_row = false;
-      ++num_it;
+      first_in_col = false;
     }
     out << '\n';
-    ++col_it;
   }
 
-  List<long long> sums;
-  col_it = columns.begin();
+  List<unsigned long long> sums;
   bool overflow = false;
 
-  while (col_it != columns.end()) {
-    long long sum = 0;
-    List<int>::iterator num_it = col_it->begin();
-    while (num_it != col_it->end()) {
-      long long val = static_cast<long long>(*num_it);
+  for (LCIter<List<int>> col_it = columns.cbegin(); col_it != columns.cend(); ++col_it) {
+    unsigned long long sum = 0;
+    for (LCIter<int> num_it = col_it->cbegin(); num_it != col_it->cend(); ++num_it) {
+      unsigned long long val = static_cast<unsigned long long>(*num_it);
       if (checkedSum(sum, val, sum)) {
         err << "Error: sum overflow" << std::endl;
         overflow = true;
         break;
       }
-      ++num_it;
     }
     if (overflow) {
       break;
     }
-    if (sum < INT_MIN || sum > INT_MAX) {
+    if (sum > static_cast<unsigned long long>(INT_MAX)) {
       err << "Error: sum out of int range" << std::endl;
       std::exit(1);
     }
     sums.push_back(sum);
-    ++col_it;
   }
 
   if (overflow) {
-    std::exit(1);
+    return 1;
   }
 
-  List<long long>::iterator sum_it = sums.begin();
-  while (sum_it != sums.end()) {
-    if (sum_it != sums.begin()) {
-      out << ' ';
+  if (sums.empty()) {
+    out << "0\n";
+  } else {
+    bool first_sum = true;
+    for (LCIter<unsigned long long> sum_it = sums.cbegin(); sum_it != sums.cend(); ++sum_it) {
+      if (!first_sum) {
+        out << ' ';
+      }
+      out << *sum_it;
+      first_sum = false;
     }
-    out << *sum_it;
-    ++sum_it;
+    out << '\n';
   }
-  out << '\n';
+  return 0;
+}
+
+void run(std::istream& in, std::ostream& out, std::ostream& err) {
+  List<Sequence> sequences = readInput(in, err);
+  if (sequences.empty()) {
+    out << "0\n";
+    return;
+  }
+  outputNames(sequences, out);
+  int result = outputNums(sequences, out, err);
+  if (result != 0) {
+    std::exit(1);
+  }
 }
 
 }
