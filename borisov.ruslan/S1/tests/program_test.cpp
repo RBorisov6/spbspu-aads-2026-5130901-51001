@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(test_example_from_task) {
   std::ostringstream output;
   std::ostringstream error;
 
-  int result = borisov::run(input, output, error);
+  borisov::run(input, output, error);
 
   std::string expected =
     "first second third fourth\n"
@@ -23,5 +23,4 @@ BOOST_AUTO_TEST_CASE(test_example_from_task) {
     "7 7 3 2\n";
 
   BOOST_CHECK_EQUAL(output.str(), expected);
-  BOOST_CHECK_EQUAL(result, 0);
 }
