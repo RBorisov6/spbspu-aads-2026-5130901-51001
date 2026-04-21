@@ -1,7 +1,6 @@
-#ifdef BUILD_TESTS
 #define BOOST_TEST_MODULE ListTest
 #include <boost/test/unit_test.hpp>
-#include "list.hpp"
+#include "../list.hpp"
 
 BOOST_AUTO_TEST_CASE(test_constructor_and_empty) {
   borisov::List<int> lst;
@@ -231,5 +230,3 @@ BOOST_AUTO_TEST_CASE(test_move_assignment) {
   BOOST_CHECK_EQUAL(b.size(), 1u);
   BOOST_CHECK_EQUAL(b.front(), 1);
 }
-
-#endif
