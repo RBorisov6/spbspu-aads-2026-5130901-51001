@@ -1,3 +1,4 @@
+#ifdef BUILD_TESTS
 #define BOOST_TEST_MODULE ProgramTest
 #include "run.hpp"
 #include <boost/test/unit_test.hpp>
@@ -25,3 +26,5 @@ BOOST_AUTO_TEST_CASE(test_example_from_task) {
 
   BOOST_CHECK_EQUAL(output.str(), expected);
 }
+
+#endif
