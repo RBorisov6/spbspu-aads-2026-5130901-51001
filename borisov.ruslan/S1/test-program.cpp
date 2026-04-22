@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE ProgramTest
 #include <boost/test/unit_test.hpp>
+#include "run.hpp"
 #include <sstream>
-#include "../run.hpp"
 
 BOOST_AUTO_TEST_CASE(test_example_from_task) {
   std::istringstream input(

@@ -2,6 +2,10 @@
 #include <iostream>
 
 int main() {
-  int ret = borisov::run(std::cin, std::cout, std::cerr);
-  return (ret != 0) ? 1 : 0;
+  try {
+    return borisov::run(std::cin, std::cout, std::cerr);
+  } catch (...) {
+    std::cerr << "Unexpected error\n";
+    return 1;
+  }
 }
