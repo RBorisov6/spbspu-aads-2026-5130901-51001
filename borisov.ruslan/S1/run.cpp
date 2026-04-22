@@ -43,14 +43,14 @@ int readInput(std::istream& in, std::ostream& err, List<Sequence>& seqs) {
       unsigned long long num = 0;
       if (in >> num) {
         if (num > static_cast<unsigned long long>(INT_MAX)) {
-          err << "Error: number out of int range" << std::endl;
+          err << "Error: number out of int range\n";
           return 1;
         }
         seq.nums.push_back(static_cast<int>(num));
       } else {
         in.clear();
         if (!isEnd(in)) {
-          err << "Error: invalid number format" << std::endl;
+          err << "Error: invalid number format\n";
           return 1;
         }
         break;
@@ -110,12 +110,12 @@ int outputNums(const List<Sequence>& seqs, std::ostream& out, std::ostream& err)
     for (LCIter<int> num_it = col_it->cbegin(); num_it != col_it->cend(); ++num_it) {
       unsigned long long val = static_cast<unsigned long long>(*num_it);
       if (checkedSum(sum, val, sum)) {
-        err << "Error: sum overflow" << std::endl;
+        err << "Error: sum overflow\n";
         return 1;
       }
     }
     if (sum > static_cast<unsigned long long>(INT_MAX)) {
-      err << "Error: sum out of int range" << std::endl;
+      err << "Error: sum out of int range\n";
       return 1;
     }
     sums.push_back(sum);
