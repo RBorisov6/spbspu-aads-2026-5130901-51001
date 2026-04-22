@@ -1,5 +1,5 @@
 #define BOOST_TEST_MODULE S1_Tests
-#include <boost/test/unit_test.hpp>
+#include <boost/test/included/unit_test.hpp>
 #include "list.hpp"
 #include "run.hpp"
 #include <sstream>
