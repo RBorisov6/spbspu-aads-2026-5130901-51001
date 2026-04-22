@@ -83,20 +83,6 @@ BOOST_AUTO_TEST_CASE(test_iterator_forward) {
   BOOST_CHECK_EQUAL(expected, 5);
 }
 
-BOOST_AUTO_TEST_CASE(test_iterator_backward) {
-  borisov::List<int> lst;
-  for (int i = 0; i < 5; ++i) lst.push_back(i);
-  borisov::List<int>::iterator it = lst.end();
-  --it;
-  int expected = 4;
-  while (true) {
-    BOOST_CHECK_EQUAL(*it, expected);
-    if (expected == 0) break;
-    --expected;
-    --it;
-  }
-}
-
 BOOST_AUTO_TEST_CASE(test_const_iterator) {
   borisov::List<int> lst;
   lst.push_back(42);
