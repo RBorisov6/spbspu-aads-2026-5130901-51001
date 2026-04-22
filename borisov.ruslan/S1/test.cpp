@@ -1,6 +1,8 @@
-#define BOOST_TEST_MODULE ListTest
-#include "list.hpp"
+#define BOOST_TEST_MODULE S1_Tests
 #include <boost/test/unit_test.hpp>
+#include "list.hpp"
+#include "run.hpp"
+#include <sstream>
 
 BOOST_AUTO_TEST_CASE(test_constructor_and_empty) {
   borisov::List<int> lst;
@@ -70,9 +72,7 @@ BOOST_AUTO_TEST_CASE(test_pop_back) {
 
 BOOST_AUTO_TEST_CASE(test_iterator_forward) {
   borisov::List<int> lst;
-  for (int i = 0; i < 5; ++i) {
-    lst.push_back(i);
-  }
+  for (int i = 0; i < 5; ++i) lst.push_back(i);
   borisov::List<int>::iterator it = lst.begin();
   int expected = 0;
   while (it != lst.end()) {
@@ -85,17 +85,13 @@ BOOST_AUTO_TEST_CASE(test_iterator_forward) {
 
 BOOST_AUTO_TEST_CASE(test_iterator_backward) {
   borisov::List<int> lst;
-  for (int i = 0; i < 5; ++i) {
-    lst.push_back(i);
-  }
+  for (int i = 0; i < 5; ++i) lst.push_back(i);
   borisov::List<int>::iterator it = lst.end();
   --it;
   int expected = 4;
   while (true) {
     BOOST_CHECK_EQUAL(*it, expected);
-    if (expected == 0) {
-      break;
-    }
+    if (expected == 0) break;
     --expected;
     --it;
   }
@@ -229,4 +225,27 @@ BOOST_AUTO_TEST_CASE(test_move_assignment) {
   BOOST_CHECK(a.empty());
   BOOST_CHECK_EQUAL(b.size(), 1u);
   BOOST_CHECK_EQUAL(b.front(), 1);
+}
+
+BOOST_AUTO_TEST_CASE(test_example_from_task) {
+  std::istringstream input(
+    "first 1 1 1\n"
+    "second 2 2 2 2\n"
+    "third\n"
+    "fourth 4 4\n"
+  );
+  std::ostringstream output;
+  std::ostringstream error;
+
+  int result = borisov::run(input, output, error);
+
+  std::string expected =
+    "first second third fourth\n"
+    "1 2 4\n"
+    "1 2 4\n"
+    "1 2\n"
+    "7 7 3 2\n";
+
+  BOOST_CHECK_EQUAL(output.str(), expected);
+  BOOST_CHECK_EQUAL(result, 0);
 }
