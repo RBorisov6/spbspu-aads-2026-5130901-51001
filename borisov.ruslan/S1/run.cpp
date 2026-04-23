@@ -4,6 +4,7 @@
 #include <sstream>
 #include <climits>
 #include <limits>
+#include <cstdlib>
 
 namespace borisov {
 
@@ -34,7 +35,7 @@ bool checkedSum(unsigned long long a, unsigned long long b, unsigned long long& 
   return false;
 }
 
-int readInput(std::istream& in, std::ostream& err, List<Sequence>& seqs) {
+void readInput(std::istream& in, std::ostream& err, List<Sequence>& seqs) {
   std::string name;
   while (in >> name) {
     Sequence seq(name);
@@ -44,14 +45,14 @@ int readInput(std::istream& in, std::ostream& err, List<Sequence>& seqs) {
       if (in >> num) {
         if (num > static_cast<unsigned long long>(INT_MAX)) {
           err << "Error: number out of int range\n";
-          return 1;
+          std::exit(1);
         }
         seq.nums.push_back(static_cast<int>(num));
       } else {
         in.clear();
         if (!isEnd(in)) {
           err << "Error: invalid number format\n";
-          return 1;
+          std::exit(1);
         }
         break;
       }
@@ -59,7 +60,6 @@ int readInput(std::istream& in, std::ostream& err, List<Sequence>& seqs) {
     skipLine(in);
     seqs.push_back(std::move(seq));
   }
-  return 0;
 }
 
 void outputNames(const List<Sequence>& seqs, std::ostream& out) {
@@ -73,15 +73,15 @@ void outputNames(const List<Sequence>& seqs, std::ostream& out) {
   out << '\n';
 }
 
-int outputNums(const List<Sequence>& seqs, std::ostream& out, std::ostream& err) {
-  if (seqs.empty()) return 0;
+void outputNums(const List<Sequence>& seqs, std::ostream& out, std::ostream& err) {
+  if (seqs.empty()) return;
   std::size_t max_len = 0;
   for (LCIter<Sequence> curr = seqs.cbegin(); curr != seqs.cend(); ++curr) {
     if (curr->nums.size() > max_len) max_len = curr->nums.size();
   }
   if (max_len == 0) {
     out << "0\n";
-    return 0;
+    return;
   }
   List<List<int>> columns;
   for (std::size_t col = 0; col < max_len; ++col) {
@@ -111,12 +111,12 @@ int outputNums(const List<Sequence>& seqs, std::ostream& out, std::ostream& err)
       unsigned long long val = static_cast<unsigned long long>(*num_it);
       if (checkedSum(sum, val, sum)) {
         err << "Error: sum overflow\n";
-        return 1;
+        std::exit(1);
       }
     }
     if (sum > static_cast<unsigned long long>(INT_MAX)) {
       err << "Error: sum out of int range\n";
-      return 1;
+      std::exit(1);
     }
     sums.push_back(sum);
   }
@@ -131,19 +131,17 @@ int outputNums(const List<Sequence>& seqs, std::ostream& out, std::ostream& err)
     }
     out << '\n';
   }
-  return 0;
 }
 
-int run(std::istream& in, std::ostream& out, std::ostream& err) {
+void run(std::istream& in, std::ostream& out, std::ostream& err) {
   List<Sequence> sequences;
-  if (readInput(in, err, sequences) != 0) return 1;
+  readInput(in, err, sequences);
   if (sequences.empty()) {
     out << "0\n";
-    return 0;
+    return;
   }
   outputNames(sequences, out);
-  if (outputNums(sequences, out, err) != 0) return 1;
-  return 0;
+  outputNums(sequences, out, err);
 }
 
 }
