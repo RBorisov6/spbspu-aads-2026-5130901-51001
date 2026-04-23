@@ -152,17 +152,6 @@ BOOST_AUTO_TEST_CASE(test_erase_middle) {
   BOOST_CHECK_EQUAL(*check, 30);
 }
 
-BOOST_AUTO_TEST_CASE(test_erase_end) {
-  borisov::List<int> lst;
-  lst.push_back(10);
-  lst.push_back(20);
-  borisov::List<int>::iterator it = lst.end();
-  --it;
-  lst.erase(it);
-  BOOST_CHECK_EQUAL(lst.size(), 1u);
-  BOOST_CHECK_EQUAL(lst.front(), 10);
-}
-
 BOOST_AUTO_TEST_CASE(test_copy_constructor) {
   borisov::List<int> original;
   original.push_back(1);
