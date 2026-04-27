@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <utility>
+#include <stdexcept>
+
 
 namespace borisov
 {
