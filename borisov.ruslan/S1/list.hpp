@@ -2,525 +2,601 @@
 #define BORISOV_LIST_HPP
 
 #include <cstddef>
-#include <stdexcept>
 #include <utility>
 
-namespace borisov {
+namespace borisov
+{
+  template <class T> class LIter;
+  template <class T> class LCIter;
 
-template <class T> class LIter;
-template <class T> class LCIter;
+  template <class T>
+  class List
+  {
+  public:
+    using iterator = LIter<T>;
+    using const_iterator = LCIter<T>;
 
-template <class T>
-class List {
-public:
-  using iterator = LIter<T>;
-  using const_iterator = LCIter<T>;
+    List();
+    List(const List& other);
+    List(List&& other) noexcept;
+    ~List();
 
-  List();
-  List(const List& other);
-  List(List&& other) noexcept;
-  ~List();
+    List& operator=(const List& other);
+    List& operator=(List&& other) noexcept;
 
-  List& operator=(const List& other);
-  List& operator=(List&& other) noexcept;
+    void pushFront(const T& value);
+    void pushBack(const T& value);
+    void popFront();
+    void popBack();
 
-  void push_front(const T& value);
-  void push_back(const T& value);
-  void pop_front();
-  void pop_back();
+    bool empty() const;
+    std::size_t size() const;
+    void clear();
 
-  bool empty() const;
-  std::size_t size() const;
-  void clear();
+    T& front();
+    const T& front() const;
+    T& back();
+    const T& back() const;
 
-  T& front();
-  const T& front() const;
-  T& back();
-  const T& back() const;
+    iterator begin();
+    iterator end();
+    const_iterator begin() const;
+    const_iterator end() const;
+    const_iterator cbegin() const;
+    const_iterator cend() const;
 
-  iterator begin();
-  iterator end();
-  const_iterator begin() const;
-  const_iterator end() const;
-  const_iterator cbegin() const;
-  const_iterator cend() const;
+    iterator insert(iterator pos, const T& value);
+    iterator erase(iterator pos);
 
-  iterator insert(iterator pos, const T& value);
-  iterator erase(iterator pos);
+    void swap(List& other) noexcept;
 
-private:
-  struct Node {
-    T data;
-    Node* prev;
-    Node* next;
+  private:
+    struct Node
+    {
+      T data_;
+      Node* prev_;
+      Node* next_;
 
-    Node(const T& val)
-      : data(val)
-      , prev(nullptr)
-      , next(nullptr)
-    {}
+      explicit Node(const T& val):
+        data_(val),
+        prev_(nullptr),
+        next_(nullptr)
+      {}
+    };
+
+    Node* head_;
+    Node* tail_;
+    std::size_t size_;
+
+    friend class LIter<T>;
+    friend class LCIter<T>;
   };
 
-  Node* head_;
-  Node* tail_;
-  std::size_t size_;
+  template <class T>
+  class LIter
+  {
+    friend class List<T>;
 
-  void swap(List& other) noexcept;
+  public:
+    LIter();
+    LIter(const LIter& other);
+    LIter& operator=(const LIter& other);
 
-  friend class LIter<T>;
-  friend class LCIter<T>;
-};
+    T& operator*() const;
+    T* operator->() const;
 
-template <class T>
-class LIter {
-  friend class List<T>;
+    LIter& operator++();
+    LIter operator++(int);
 
-public:
-  LIter();
-  LIter(const LIter& other);
-  LIter& operator=(const LIter& other);
+    LIter& operator--();
+    LIter operator--(int);
 
-  T& operator*() const;
-  T* operator->() const;
+    bool operator==(const LIter& other) const;
+    bool operator!=(const LIter& other) const;
 
-  LIter& operator++();
-  LIter operator++(int);
+  private:
+    using Node = typename List<T>::Node;
+    Node* node_;
 
-  LIter& operator--();
-  LIter operator--(int);
+    explicit LIter(Node* node);
+  };
 
-  bool operator==(const LIter& other) const;
-  bool operator!=(const LIter& other) const;
+  template <class T>
+  class LCIter
+  {
+    friend class List<T>;
 
-private:
-  typedef typename List<T>::Node Node;
-  Node* node_;
+  public:
+    LCIter();
+    LCIter(const LCIter& other);
+    LCIter& operator=(const LCIter& other);
 
-  explicit LIter(Node* node);
-};
+    const T& operator*() const;
+    const T* operator->() const;
 
-template <class T>
-class LCIter {
-  friend class List<T>;
+    LCIter& operator++();
+    LCIter operator++(int);
 
-public:
-  LCIter();
-  LCIter(const LCIter& other);
-  LCIter& operator=(const LCIter& other);
+    LCIter& operator--();
+    LCIter operator--(int);
 
-  const T& operator*() const;
-  const T* operator->() const;
+    bool operator==(const LCIter& other) const;
+    bool operator!=(const LCIter& other) const;
 
-  LCIter& operator++();
-  LCIter operator++(int);
+  private:
+    using Node = typename List<T>::Node;
+    const Node* node_;
 
-  LCIter& operator--();
-  LCIter operator--(int);
+    explicit LCIter(const Node* node);
+  };
 
-  bool operator==(const LCIter& other) const;
-  bool operator!=(const LCIter& other) const;
+  template <class T>
+  List<T>::List():
+    head_(nullptr),
+    tail_(nullptr),
+    size_(0)
+  {}
 
-private:
-  using Node = typename List<T>::Node;
-  const Node* node_;
-
-  explicit LCIter(const Node* node);
-};
-
-template <class T>
-LIter<T>::LIter()
-  : node_(nullptr)
-{}
-
-template <class T>
-LIter<T>::LIter(const LIter& other)
-  : node_(other.node_)
-{}
-
-template <class T>
-LIter<T>& LIter<T>::operator=(const LIter& other) {
-  if (this != &other) {
-    node_ = other.node_;
+  template <class T>
+  List<T>::List(const List& other):
+    head_(nullptr),
+    tail_(nullptr),
+    size_(0)
+  {
+    for (const_iterator it = other.begin(); it != other.end(); ++it)
+    {
+      pushBack(*it);
+    }
   }
-  return *this;
-}
 
-template <class T>
-LIter<T>::LIter(Node* node)
-  : node_(node)
-{}
-
-template <class T>
-T& LIter<T>::operator*() const {
-  return node_->data;
-}
-
-template <class T>
-T* LIter<T>::operator->() const {
-  return &node_->data;
-}
-
-template <class T>
-LIter<T>& LIter<T>::operator++() {
-  if (node_ != nullptr) {
-    node_ = node_->next;
-  }
-  return *this;
-}
-
-template <class T>
-LIter<T> LIter<T>::operator++(int) {
-  LIter old = *this;
-  ++(*this);
-  return old;
-}
-
-template <class T>
-LIter<T>& LIter<T>::operator--() {
-  if (node_ != nullptr) {
-    node_ = node_->prev;
-  }
-  return *this;
-}
-
-template <class T>
-LIter<T> LIter<T>::operator--(int) {
-  LIter old = *this;
-  --(*this);
-  return old;
-}
-
-template <class T>
-bool LIter<T>::operator==(const LIter& other) const {
-  return node_ == other.node_;
-}
-
-template <class T>
-bool LIter<T>::operator!=(const LIter& other) const {
-  return !(*this == other);
-}
-
-template <class T>
-LCIter<T>::LCIter()
-  : node_(nullptr)
-{}
-
-template <class T>
-LCIter<T>::LCIter(const LCIter& other)
-  : node_(other.node_)
-{}
-
-template <class T>
-LCIter<T>& LCIter<T>::operator=(const LCIter& other) {
-  if (this != &other) {
-    node_ = other.node_;
-  }
-  return *this;
-}
-
-template <class T>
-LCIter<T>::LCIter(const Node* node)
-  : node_(node)
-{}
-
-template <class T>
-const T& LCIter<T>::operator*() const {
-  return node_->data;
-}
-
-template <class T>
-const T* LCIter<T>::operator->() const {
-  return &node_->data;
-}
-
-template <class T>
-LCIter<T>& LCIter<T>::operator++() {
-  if (node_ != nullptr) {
-    node_ = node_->next;
-  }
-  return *this;
-}
-
-template <class T>
-LCIter<T> LCIter<T>::operator++(int) {
-  LCIter old = *this;
-  ++(*this);
-  return old;
-}
-
-template <class T>
-LCIter<T>& LCIter<T>::operator--() {
-  if (node_ != nullptr) {
-    node_ = node_->prev;
-  }
-  return *this;
-}
-
-template <class T>
-LCIter<T> LCIter<T>::operator--(int) {
-  LCIter old = *this;
-  --(*this);
-  return old;
-}
-
-template <class T>
-bool LCIter<T>::operator==(const LCIter& other) const {
-  return node_ == other.node_;
-}
-
-template <class T>
-bool LCIter<T>::operator!=(const LCIter& other) const {
-  return !(*this == other);
-}
-
-template <class T>
-List<T>::List()
-  : head_(nullptr)
-  , tail_(nullptr)
-  , size_(0)
-{}
-
-template <class T>
-List<T>::List(const List& other)
-  : head_(nullptr)
-  , tail_(nullptr)
-  , size_(0)
-{
-  for (const_iterator it = other.begin(); it != other.end(); ++it) {
-    push_back(*it);
-  }
-}
-
-template <class T>
-List<T>::List(List&& other) noexcept
-  : head_(other.head_)
-  , tail_(other.tail_)
-  , size_(other.size_)
-{
-  other.head_ = nullptr;
-  other.tail_ = nullptr;
-  other.size_ = 0;
-}
-
-template <class T>
-bool List<T>::empty() const {
-  return size_ == 0;
-}
-
-template <class T>
-List<T>::~List() {
-  clear();
-}
-
-template <class T>
-void List<T>::clear() {
-  while (!empty()) {
-    pop_front();
-  }
-}
-
-template <class T>
-List<T>& List<T>::operator=(const List& other) {
-  if (this != &other) {
-    List tmp(other);
-    swap(tmp);
-  }
-  return *this;
-}
-
-template <class T>
-List<T>& List<T>::operator=(List&& other) noexcept {
-  if (this != &other) {
-    clear();
-    head_ = other.head_;
-    tail_ = other.tail_;
-    size_ = other.size_;
+  template <class T>
+  List<T>::List(List&& other) noexcept:
+    head_(other.head_),
+    tail_(other.tail_),
+    size_(other.size_)
+  {
     other.head_ = nullptr;
     other.tail_ = nullptr;
     other.size_ = 0;
   }
-  return *this;
-}
 
-template <class T>
-void List<T>::push_front(const T& value) {
-  Node* node = new Node(value);
-  if (empty()) {
-    head_ = tail_ = node;
-  } else {
-    node->next = head_;
-    head_->prev = node;
-    head_ = node;
+  template <class T>
+  List<T>::~List()
+  {
+    clear();
   }
-  ++size_;
-}
 
-template <class T>
-void List<T>::push_back(const T& value) {
-  Node* node = new Node(value);
-  if (empty()) {
-    head_ = tail_ = node;
-  } else {
-    node->prev = tail_;
-    tail_->next = node;
-    tail_ = node;
+  template <class T>
+  List<T>& List<T>::operator=(const List& other)
+  {
+    if (this != &other)
+    {
+      List tmp(other);
+      swap(tmp);
+    }
+    return *this;
   }
-  ++size_;
-}
 
-template <class T>
-void List<T>::pop_front() {
-  if (empty()) {
-    throw std::logic_error("pop_front on empty list");
+  template <class T>
+  List<T>& List<T>::operator=(List&& other) noexcept
+  {
+    if (this != &other)
+    {
+      clear();
+      head_ = other.head_;
+      tail_ = other.tail_;
+      size_ = other.size_;
+      other.head_ = nullptr;
+      other.tail_ = nullptr;
+      other.size_ = 0;
+    }
+    return *this;
   }
-  Node* old_head = head_;
-  head_ = head_->next;
-  if (head_ != nullptr) {
-    head_->prev = nullptr;
-  } else {
-    tail_ = nullptr;
+
+  template <class T>
+  void List<T>::pushFront(const T& value)
+  {
+    Node* node = new Node(value);
+    if (empty())
+    {
+      head_ = tail_ = node;
+    }
+    else
+    {
+      node->next_ = head_;
+      head_->prev_ = node;
+      head_ = node;
+    }
+    ++size_;
   }
-  delete old_head;
-  --size_;
-}
 
-template <class T>
-void List<T>::pop_back() {
-  if (empty()) {
-    throw std::logic_error("pop_back on empty list");
+  template <class T>
+  void List<T>::pushBack(const T& value)
+  {
+    Node* node = new Node(value);
+    if (empty())
+    {
+      head_ = tail_ = node;
+    }
+    else
+    {
+      node->prev_ = tail_;
+      tail_->next_ = node;
+      tail_ = node;
+    }
+    ++size_;
   }
-  Node* old_tail = tail_;
-  tail_ = tail_->prev;
-  if (tail_ != nullptr) {
-    tail_->next = nullptr;
-  } else {
-    head_ = nullptr;
+
+  template <class T>
+  void List<T>::popFront()
+  {
+    if (empty())
+    {
+      throw std::logic_error("popFront on empty list");
+    }
+    Node* oldHead = head_;
+    head_ = head_->next_;
+    if (head_ != nullptr)
+    {
+      head_->prev_ = nullptr;
+    }
+    else
+    {
+      tail_ = nullptr;
+    }
+    delete oldHead;
+    --size_;
   }
-  delete old_tail;
-  --size_;
-}
 
-template <class T>
-std::size_t List<T>::size() const {
-  return size_;
-}
-
-template <class T>
-T& List<T>::front() {
-  if (empty()) {
-    throw std::logic_error("front on empty list");
+  template <class T>
+  void List<T>::popBack()
+  {
+    if (empty())
+    {
+      throw std::logic_error("popBack on empty list");
+    }
+    Node* oldTail = tail_;
+    tail_ = tail_->prev_;
+    if (tail_ != nullptr)
+    {
+      tail_->next_ = nullptr;
+    }
+    else
+    {
+      head_ = nullptr;
+    }
+    delete oldTail;
+    --size_;
   }
-  return head_->data;
-}
 
-template <class T>
-const T& List<T>::front() const {
-  if (empty()) {
-    throw std::logic_error("front on empty list");
+  template <class T>
+  bool List<T>::empty() const
+  {
+    return size_ == 0;
   }
-  return head_->data;
-}
 
-template <class T>
-T& List<T>::back() {
-  if (empty()) {
-    throw std::logic_error("back on empty list");
+  template <class T>
+  std::size_t List<T>::size() const
+  {
+    return size_;
   }
-  return tail_->data;
-}
 
-template <class T>
-const T& List<T>::back() const {
-  if (empty()) {
-    throw std::logic_error("back on empty list");
+  template <class T>
+  void List<T>::clear()
+  {
+    while (!empty())
+    {
+      popFront();
+    }
   }
-  return tail_->data;
-}
 
-template <class T>
-typename List<T>::iterator List<T>::begin() {
-  return iterator(head_);
-}
-
-template <class T>
-typename List<T>::iterator List<T>::end() {
-  return iterator(nullptr);
-}
-
-template <class T>
-typename List<T>::const_iterator List<T>::begin() const {
-  return const_iterator(head_);
-}
-
-template <class T>
-typename List<T>::const_iterator List<T>::end() const {
-  return const_iterator(nullptr);
-}
-
-template <class T>
-typename List<T>::const_iterator List<T>::cbegin() const {
-  return const_iterator(head_);
-}
-
-template <class T>
-typename List<T>::const_iterator List<T>::cend() const {
-  return const_iterator(nullptr);
-}
-
-template <class T>
-typename List<T>::iterator List<T>::insert(iterator pos, const T& value) {
-  if (pos == begin()) {
-    push_front(value);
-    return begin();
+  template <class T>
+  T& List<T>::front()
+  {
+    if (empty())
+    {
+      throw std::logic_error("front on empty list");
+    }
+    return head_->data_;
   }
-  if (pos == end()) {
-    push_back(value);
-    iterator it = end();
-    --it;
-    return it;
-  }
-  Node* curr = pos.node_;
-  Node* prev = curr->prev;
-  Node* node = new Node(value);
-  node->prev = prev;
-  node->next = curr;
-  prev->next = node;
-  curr->prev = node;
-  ++size_;
-  return iterator(node);
-}
 
-template <class T>
-typename List<T>::iterator List<T>::erase(iterator pos) {
-  if (pos == end()) {
-    return end();
+  template <class T>
+  const T& List<T>::front() const
+  {
+    if (empty())
+    {
+      throw std::logic_error("front on empty list");
+    }
+    return head_->data_;
   }
-  Node* curr = pos.node_;
-  iterator next_it = pos;
-  ++next_it;
-  if (curr == head_) {
-    pop_front();
-    return begin();
-  }
-  if (curr == tail_) {
-    pop_back();
-    return end();
-  }
-  curr->prev->next = curr->next;
-  curr->next->prev = curr->prev;
-  delete curr;
-  --size_;
-  return next_it;
-}
 
-template <class T>
-void List<T>::swap(List& other) noexcept {
-  using std::swap;
-  swap(head_, other.head_);
-  swap(tail_, other.tail_);
-  swap(size_, other.size_);
-}
+  template <class T>
+  T& List<T>::back()
+  {
+    if (empty())
+    {
+      throw std::logic_error("back on empty list");
+    }
+    return tail_->data_;
+  }
 
+  template <class T>
+  const T& List<T>::back() const
+  {
+    if (empty())
+    {
+      throw std::logic_error("back on empty list");
+    }
+    return tail_->data_;
+  }
+
+  template <class T>
+  typename List<T>::iterator List<T>::begin()
+  {
+    return iterator(head_);
+  }
+
+  template <class T>
+  typename List<T>::iterator List<T>::end()
+  {
+    return iterator(nullptr);
+  }
+
+  template <class T>
+  typename List<T>::const_iterator List<T>::begin() const
+  {
+    return const_iterator(head_);
+  }
+
+  template <class T>
+  typename List<T>::const_iterator List<T>::end() const
+  {
+    return const_iterator(nullptr);
+  }
+
+  template <class T>
+  typename List<T>::const_iterator List<T>::cbegin() const
+  {
+    return const_iterator(head_);
+  }
+
+  template <class T>
+  typename List<T>::const_iterator List<T>::cend() const
+  {
+    return const_iterator(nullptr);
+  }
+
+  template <class T>
+  typename List<T>::iterator List<T>::insert(iterator pos, const T& value)
+  {
+    if (pos == begin())
+    {
+      pushFront(value);
+      return begin();
+    }
+    if (pos == end())
+    {
+      pushBack(value);
+      iterator it = end();
+      --it;
+      return it;
+    }
+    Node* curr = pos.node_;
+    Node* prev = curr->prev_;
+    Node* node = new Node(value);
+    node->prev_ = prev;
+    node->next_ = curr;
+    prev->next_ = node;
+    curr->prev_ = node;
+    ++size_;
+    return iterator(node);
+  }
+
+  template <class T>
+  typename List<T>::iterator List<T>::erase(iterator pos)
+  {
+    if (pos == end())
+    {
+      return end();
+    }
+    Node* curr = pos.node_;
+    iterator nextIt = pos;
+    ++nextIt;
+    if (curr == head_)
+    {
+      popFront();
+      return begin();
+    }
+    if (curr == tail_)
+    {
+      popBack();
+      return end();
+    }
+    curr->prev_->next_ = curr->next_;
+    curr->next_->prev_ = curr->prev_;
+    delete curr;
+    --size_;
+    return nextIt;
+  }
+
+  template <class T>
+  void List<T>::swap(List& other) noexcept
+  {
+    using std::swap;
+    swap(head_, other.head_);
+    swap(tail_, other.tail_);
+    swap(size_, other.size_);
+  }
+
+  template <class T>
+  LIter<T>::LIter():
+    node_(nullptr)
+  {}
+
+  template <class T>
+  LIter<T>::LIter(const LIter& other):
+    node_(other.node_)
+  {}
+
+  template <class T>
+  LIter<T>& LIter<T>::operator=(const LIter& other)
+  {
+    if (this != &other)
+    {
+      node_ = other.node_;
+    }
+    return *this;
+  }
+
+  template <class T>
+  LIter<T>::LIter(Node* node):
+    node_(node)
+  {}
+
+  template <class T>
+  T& LIter<T>::operator*() const
+  {
+    return node_->data_;
+  }
+
+  template <class T>
+  T* LIter<T>::operator->() const
+  {
+    return &node_->data_;
+  }
+
+  template <class T>
+  LIter<T>& LIter<T>::operator++()
+  {
+    if (node_ != nullptr)
+    {
+      node_ = node_->next_;
+    }
+    return *this;
+  }
+
+  template <class T>
+  LIter<T> LIter<T>::operator++(int)
+  {
+    LIter old(*this);
+    ++(*this);
+    return old;
+  }
+
+  template <class T>
+  LIter<T>& LIter<T>::operator--()
+  {
+    if (node_ != nullptr)
+    {
+      node_ = node_->prev_;
+    }
+    return *this;
+  }
+
+  template <class T>
+  LIter<T> LIter<T>::operator--(int)
+  {
+    LIter old(*this);
+    --(*this);
+    return old;
+  }
+
+  template <class T>
+  bool LIter<T>::operator==(const LIter& other) const
+  {
+    return node_ == other.node_;
+  }
+
+  template <class T>
+  bool LIter<T>::operator!=(const LIter& other) const
+  {
+    return !(*this == other);
+  }
+
+  template <class T>
+  LCIter<T>::LCIter():
+    node_(nullptr)
+  {}
+
+  template <class T>
+  LCIter<T>::LCIter(const LCIter& other):
+    node_(other.node_)
+  {}
+
+  template <class T>
+  LCIter<T>& LCIter<T>::operator=(const LCIter& other)
+  {
+    if (this != &other)
+    {
+      node_ = other.node_;
+    }
+    return *this;
+  }
+
+  template <class T>
+  LCIter<T>::LCIter(const Node* node):
+    node_(node)
+  {}
+
+  template <class T>
+  const T& LCIter<T>::operator*() const
+  {
+    return node_->data_;
+  }
+
+  template <class T>
+  const T* LCIter<T>::operator->() const
+  {
+    return &node_->data_;
+  }
+
+  template <class T>
+  LCIter<T>& LCIter<T>::operator++()
+  {
+    if (node_ != nullptr)
+    {
+      node_ = node_->next_;
+    }
+    return *this;
+  }
+
+  template <class T>
+  LCIter<T> LCIter<T>::operator++(int)
+  {
+    LCIter old(*this);
+    ++(*this);
+    return old;
+  }
+
+  template <class T>
+  LCIter<T>& LCIter<T>::operator--()
+  {
+    if (node_ != nullptr)
+    {
+      node_ = node_->prev_;
+    }
+    return *this;
+  }
+
+  template <class T>
+  LCIter<T> LCIter<T>::operator--(int)
+  {
+    LCIter old(*this);
+    --(*this);
+    return old;
+  }
+
+  template <class T>
+  bool LCIter<T>::operator==(const LCIter& other) const
+  {
+    return node_ == other.node_;
+  }
+
+  template <class T>
+  bool LCIter<T>::operator!=(const LCIter& other) const
+  {
+    return !(*this == other);
+  }
 }
 
 #endif

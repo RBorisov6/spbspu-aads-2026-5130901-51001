@@ -1,294 +1,215 @@
 #include "run.hpp"
 #include "list.hpp"
-#include <iostream>
-#include <climits>
 #include <limits>
+#include <iostream>
+#include <string>
+#include <utility>
 
 namespace borisov
 {
-
-const char * ERR_MSG =
-  "Formed lists with exit code 1 and error message in standard error because of overflow\n";
-
-struct Sequence
-{
-  std::string name;
-  List< int > nums;
-
-  explicit Sequence(const std::string & n):
-    name(n)
-  {}
-};
-
-void skipSpaces(std::istream & in)
-{
-  while (in.peek() == ' ' || in.peek() == '\t')
+  struct NamedSeq
   {
-    in.get();
-  }
-}
+    std::string name;
+    List< std::size_t > nums;
+  };
 
-bool isEndOfLine(std::istream & in)
-{
-  int c = in.peek();
-  return c == '\n' || c == '\r' || c == std::istream::traits_type::eof();
-}
-
-void skipLine(std::istream & in)
-{
-  while (!isEndOfLine(in))
+  namespace
   {
-    in.get();
-  }
-
-  if (in.peek() == '\r')
-  {
-    in.get();
-  }
-
-  if (in.peek() == '\n')
-  {
-    in.get();
-  }
-}
-
-bool checkedSum(unsigned long long a,
-  unsigned long long b,
-  unsigned long long & result)
-{
-  if (b > std::numeric_limits< unsigned long long >::max() - a)
-  {
-    return true;
-  }
-
-  result = a + b;
-  return false;
-}
-
-bool readInput(std::istream & in,
-  std::ostream & err,
-  List< Sequence > & sequences)
-{
-  std::string name;
-
-  while (in >> name)
-  {
-    Sequence sequence(name);
-    skipSpaces(in);
-
-    while (!isEndOfLine(in))
+    void skipSpaces(std::istream& in)
     {
-      unsigned long long value = 0;
-
-      if (in >> value)
+      while (in.peek() == ' ' || in.peek() == '\t')
       {
-        if (value > static_cast< unsigned long long >(INT_MAX))
-        {
-          err << ERR_MSG;
-          return true;
-        }
-
-        sequence.nums.push_back(static_cast< int >(value));
-      }
-      else
-      {
-        in.clear();
-
-        if (!isEndOfLine(in))
-        {
-          err << ERR_MSG;
-          return true;
-        }
-
-        break;
+        in.get();
       }
     }
 
-    skipLine(in);
-    sequences.push_back(sequence);
-  }
-
-  return false;
-}
-
-void outputNames(const List< Sequence > & sequences,
-  std::ostream & out)
-{
-  LCIter< Sequence > it = sequences.cbegin();
-  bool isFirst = true;
-
-  for (; it != sequences.cend(); ++it)
-  {
-    if (!isFirst)
+    bool isLineEnd(std::istream& in)
     {
-      out << ' ';
+      int c = in.peek();
+      return c == '\n' || c == '\r' || c == std::istream::traits_type::eof();
     }
 
-    out << it->name;
-    isFirst = false;
-  }
-
-  out << '\n';
-}
-
-bool outputNumbers(const List< Sequence > & sequences,
-  std::ostream & out,
-  std::ostream & err)
-{
-  if (sequences.empty())
-  {
-    return false;
-  }
-
-  std::size_t maxLength = 0;
-
-  for (LCIter< Sequence > it = sequences.cbegin();
-    it != sequences.cend();
-    ++it)
-  {
-    if (it->nums.size() > maxLength)
+    void skipLine(std::istream& in)
     {
-      maxLength = it->nums.size();
-    }
-  }
-
-  if (maxLength == 0)
-  {
-    out << "0\n";
-    return false;
-  }
-
-  List< List< int > > columns;
-
-  for (std::size_t col = 0; col < maxLength; ++col)
-  {
-    List< int > column;
-
-    for (LCIter< Sequence > seqIt = sequences.cbegin();
-      seqIt != sequences.cend();
-      ++seqIt)
-    {
-      if (col < seqIt->nums.size())
+      while (!isLineEnd(in))
       {
-        LCIter< int > numIt = seqIt->nums.cbegin();
-
-        for (std::size_t i = 0; i < col; ++i)
-        {
-          ++numIt;
-        }
-
-        column.push_back(*numIt);
+        in.get();
+      }
+      if (in.peek() == '\r')
+      {
+        in.get();
+      }
+      if (in.peek() == '\n')
+      {
+        in.get();
       }
     }
 
-    columns.push_back(column);
-  }
-
-  for (LCIter< List< int > > colIt = columns.cbegin();
-    colIt != columns.cend();
-    ++colIt)
-  {
-    bool isFirst = true;
-
-    for (LCIter< int > numIt = colIt->cbegin();
-      numIt != colIt->cend();
-      ++numIt)
+    bool addChecked(std::size_t a, std::size_t b, std::size_t& result)
     {
-      if (!isFirst)
+      if (b > std::numeric_limits< std::size_t >::max() - a)
       {
-        out << ' ';
+        return false;
       }
-
-      out << *numIt;
-      isFirst = false;
-    }
-
-    out << '\n';
-  }
-
-  List< unsigned long long > sums;
-
-  for (LCIter< List< int > > colIt = columns.cbegin();
-    colIt != columns.cend();
-    ++colIt)
-  {
-    unsigned long long sum = 0;
-
-    for (LCIter< int > numIt = colIt->cbegin();
-      numIt != colIt->cend();
-      ++numIt)
-    {
-      unsigned long long value =
-        static_cast< unsigned long long >(*numIt);
-
-      if (checkedSum(sum, value, sum))
-      {
-        err << ERR_MSG;
-        return true;
-      }
-    }
-
-    if (sum > static_cast< unsigned long long >(INT_MAX))
-    {
-      err << ERR_MSG;
+      result = a + b;
       return true;
     }
-
-    sums.push_back(sum);
   }
 
-  if (sums.empty())
+  List< NamedSeq > readInput(std::istream& in)
   {
-    out << "0\n";
-  }
-  else
-  {
-    bool isFirst = true;
-
-    for (LCIter< unsigned long long > it = sums.cbegin();
-      it != sums.cend();
-      ++it)
+    List< NamedSeq > seqs;
+    std::string name;
+    while (in >> name)
     {
-      if (!isFirst)
+      NamedSeq seq;
+      seq.name = name;
+      skipSpaces(in);
+      while (!isLineEnd(in))
+      {
+        std::size_t value = 0;
+        in >> value;
+        seq.nums.pushBack(value);
+        skipSpaces(in);
+      }
+      skipLine(in);
+      seqs.pushBack(std::move(seq));
+    }
+    return seqs;
+  }
+
+  void printNames(std::ostream& out, const List< NamedSeq >& seqs)
+  {
+    bool first = true;
+    for (auto it = seqs.cbegin(); it != seqs.cend(); ++it)
+    {
+      if (!first)
       {
         out << ' ';
       }
-
-      out << *it;
-      isFirst = false;
+      out << it->name;
+      first = false;
     }
-
     out << '\n';
   }
 
-  return false;
-}
-
-int run(std::istream & in,
-  std::ostream & out,
-  std::ostream & err)
-{
-  List< Sequence > sequences;
-
-  if (readInput(in, err, sequences))
+  int printSequences(std::ostream& out, std::ostream& err,
+                     const List< NamedSeq >& seqs)
   {
-    return 1;
-  }
+    using ConstIter = typename List< std::size_t >::const_iterator;
 
-  if (sequences.empty())
-  {
-    out << "0\n";
+    List< ConstIter > iters;
+    for (auto s = seqs.cbegin(); s != seqs.cend(); ++s)
+    {
+      iters.pushBack(s->nums.cbegin());
+    }
+
+    List< List< std::size_t > > rows;
+    List< std::size_t > sums;
+    bool overflow = false;
+
+    while (true)
+    {
+      bool hasRow = false;
+      List< std::size_t > row;
+      std::size_t sum = 0;
+      bool rowOverflow = false;
+
+      auto it = iters.begin();
+      auto s = seqs.cbegin();
+
+      while (it != iters.end())
+      {
+        if (*it != s->nums.cend())
+        {
+          hasRow = true;
+          std::size_t value = **it;
+          row.pushBack(value);
+
+          if (!rowOverflow)
+          {
+            std::size_t nextSum = 0;
+            if (!addChecked(sum, value, nextSum))
+            {
+              rowOverflow = true;
+              overflow = true;
+            }
+            else
+            {
+              sum = nextSum;
+            }
+          }
+          ++(*it);
+        }
+        ++it;
+        ++s;
+      }
+
+      if (!hasRow)
+      {
+        break;
+      }
+
+      rows.pushBack(std::move(row));
+      if (!rowOverflow)
+      {
+        sums.pushBack(sum);
+      }
+    }
+
+    for (auto r = rows.cbegin(); r != rows.cend(); ++r)
+    {
+      bool first = true;
+      for (auto v = r->cbegin(); v != r->cend(); ++v)
+      {
+        if (!first)
+        {
+          out << ' ';
+        }
+        out << *v;
+        first = false;
+      }
+      out << '\n';
+    }
+
+    if (overflow)
+    {
+      err << "overflow\n";
+      return 1;
+    }
+
+    if (sums.empty())
+    {
+      out << "0\n";
+      return 0;
+    }
+
+    bool first = true;
+    for (auto s = sums.cbegin(); s != sums.cend(); ++s)
+    {
+      if (!first)
+      {
+        out << ' ';
+      }
+      out << *s;
+      first = false;
+    }
+    out << '\n';
+
     return 0;
   }
 
-  outputNames(sequences, out);
-
-  if (outputNumbers(sequences, out, err))
+  int run(std::istream& in, std::ostream& out, std::ostream& err)
   {
-    return 1;
+    List< NamedSeq > seqs = readInput(in);
+
+    if (seqs.empty())
+    {
+      out << "0\n";
+      return 0;
+    }
+
+    printNames(out, seqs);
+    return printSequences(out, err, seqs);
   }
-
-  return 0;
-}
-
 }
