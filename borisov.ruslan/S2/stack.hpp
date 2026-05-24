@@ -1,7 +1,7 @@
 #ifndef BORISOV_STACK_HPP
 #define BORISOV_STACK_HPP
 
-#include "../../common/list.hpp"
+#include "../common/list.hpp"
 #include <stdexcept>
 
 namespace borisov
