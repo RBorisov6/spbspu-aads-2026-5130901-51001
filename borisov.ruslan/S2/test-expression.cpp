@@ -1,4 +1,5 @@
-#include <boost/test/unit_test.hpp>
+#define BOOST_TEST_MODULE S2_Tests
+#include <boost/test/included/unit_test.hpp>
 #include "evaluateExpression.hpp"
 #include <sstream>
 #include <stdexcept>

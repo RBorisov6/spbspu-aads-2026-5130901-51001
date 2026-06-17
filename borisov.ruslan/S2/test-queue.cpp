@@ -1,4 +1,5 @@
-#include <boost/test/unit_test.hpp>
+#define BOOST_TEST_MODULE S2_Tests
+#include <boost/test/included/unit_test.hpp>
 #include "queue.hpp"
 
 BOOST_AUTO_TEST_CASE(queue_push_and_front)

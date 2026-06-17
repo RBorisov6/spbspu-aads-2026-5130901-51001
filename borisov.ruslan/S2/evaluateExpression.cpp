@@ -5,6 +5,8 @@
 #include <sstream>
 #include <cstdlib>
 #include <stdexcept>
+#include <climits>
+#include <limits>
 
 namespace borisov
 {
@@ -215,16 +217,19 @@ namespace borisov
           long long a = operands.top();
           operands.pop();
 
+          long long result = 0;
+          bool overflow = false;
+
           switch (t.type)
           {
           case TokenType::op_plus:
-            operands.push(a + b);
+            overflow = __builtin_add_overflow(a, b, &result);
             break;
           case TokenType::op_minus:
-            operands.push(a - b);
+            overflow = __builtin_sub_overflow(a, b, &result);
             break;
           case TokenType::op_mult:
-            operands.push(a * b);
+            overflow = __builtin_mul_overflow(a, b, &result);
             break;
           case TokenType::op_div:
             if (b == 0)
@@ -232,7 +237,12 @@ namespace borisov
               errorMsg = "Division by zero";
               return 0;
             }
-            operands.push(a / b);
+            if (a == std::numeric_limits<long long>::min() && b == -1)
+            {
+              errorMsg = "Division overflow";
+              return 0;
+            }
+            result = a / b;
             break;
           case TokenType::op_mod:
             if (b == 0)
@@ -240,12 +250,27 @@ namespace borisov
               errorMsg = "Modulo by zero";
               return 0;
             }
-            operands.push(a % b);
+            result = a % b;
+            if (result < 0 && b > 0)
+            {
+              result += b;
+            }
+            else if (result > 0 && b < 0)
+            {
+              result += b;
+            }
             break;
           default:
             errorMsg = "Unknown operator";
             return 0;
           }
+
+          if (overflow)
+          {
+            errorMsg = "Arithmetic overflow";
+            return 0;
+          }
+          operands.push(result);
         }
       }
 
