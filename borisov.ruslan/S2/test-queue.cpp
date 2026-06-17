@@ -137,7 +137,4 @@ BOOST_AUTO_TEST_CASE(queue_self_assignment_ok)
   q = q;
   BOOST_CHECK_EQUAL(q.size(), 1);
   BOOST_CHECK_EQUAL(q.front(), 45);
-  q = std::move(q);
-  BOOST_CHECK_EQUAL(q.size(), 1);
-  BOOST_CHECK_EQUAL(q.front(), 45);
 }

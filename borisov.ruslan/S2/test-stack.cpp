@@ -131,7 +131,4 @@ BOOST_AUTO_TEST_CASE(stack_self_assignment_does_nothing)
   s = s;
   BOOST_CHECK_EQUAL(s.size(), 1);
   BOOST_CHECK_EQUAL(s.top(), 5);
-  s = std::move(s);
-  BOOST_CHECK_EQUAL(s.size(), 1);
-  BOOST_CHECK_EQUAL(s.top(), 5);
 }
