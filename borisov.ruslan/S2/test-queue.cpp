@@ -1,4 +1,4 @@
-#include <boost/test/included/unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 #include "queue.hpp"
 
 BOOST_AUTO_TEST_CASE(queue_push_and_front)
