@@ -5,7 +5,6 @@
 #include <sstream>
 #include <cstdlib>
 #include <stdexcept>
-#include <climits>
 #include <limits>
 
 namespace borisov
@@ -182,6 +181,119 @@ namespace borisov
       return true;
     }
 
+    long long safeAdd(long long a, long long b)
+    {
+      const long long maxVal = std::numeric_limits<long long>::max();
+      const long long minVal = std::numeric_limits<long long>::min();
+      if (b > 0 && a > maxVal - b)
+      {
+        throw std::overflow_error("overflow");
+      }
+      if (b < 0 && a < minVal - b)
+      {
+        throw std::overflow_error("overflow");
+      }
+      return a + b;
+    }
+
+    long long safeSub(long long a, long long b)
+    {
+      const long long maxVal = std::numeric_limits<long long>::max();
+      const long long minVal = std::numeric_limits<long long>::min();
+      if (b > 0 && a < minVal + b)
+      {
+        throw std::overflow_error("overflow");
+      }
+      if (b < 0 && a > maxVal + b)
+      {
+        throw std::overflow_error("overflow");
+      }
+      return a - b;
+    }
+
+    long long safeMul(long long a, long long b)
+    {
+      const long long maxVal = std::numeric_limits<long long>::max();
+      const long long minVal = std::numeric_limits<long long>::min();
+      if (a == 0 || b == 0)
+      {
+        return 0;
+      }
+      if ((a == -1 && b == minVal) || (b == -1 && a == minVal))
+      {
+        throw std::overflow_error("overflow");
+      }
+      if (a > 0)
+      {
+        if (b > 0)
+        {
+          if (a > maxVal / b)
+          {
+            throw std::overflow_error("overflow");
+          }
+        }
+        else if (b < minVal / a)
+        {
+          throw std::overflow_error("overflow");
+        }
+      }
+      else
+      {
+        if (b > 0)
+        {
+          if (a < minVal / b)
+          {
+            throw std::overflow_error("overflow");
+          }
+        }
+        else if (a < maxVal / b)
+        {
+          throw std::overflow_error("overflow");
+        }
+      }
+      return a * b;
+    }
+
+    long long safeDiv(long long a, long long b)
+    {
+      if (b == 0)
+      {
+        throw std::logic_error("division by zero");
+      }
+      if (a == std::numeric_limits<long long>::min() && b == -1)
+      {
+        throw std::overflow_error("overflow");
+      }
+      return a / b;
+    }
+
+    long long safeMod(long long a, long long b)
+    {
+      if (b == 0)
+      {
+        throw std::logic_error("division by zero");
+      }
+      if (a == std::numeric_limits<long long>::min() && b == -1)
+      {
+        return 0;
+      }
+      long long remainder = a % b;
+      if (remainder >= 0)
+      {
+        return remainder;
+      }
+      long long divisorMagnitude = (b > 0) ? b : -static_cast<long long>(b);
+      long long remainderMagnitude = (remainder > 0) ? remainder : -remainder;
+      if (b > 0)
+      {
+        return divisorMagnitude - remainderMagnitude;
+      }
+      else
+      {
+        return -(divisorMagnitude - remainderMagnitude);
+      }
+    }
+
     long long evalPostfix(Queue< Token >& postfix, std::string& errorMsg)
     {
       Stack< long long > operands;
@@ -217,60 +329,40 @@ namespace borisov
           long long a = operands.top();
           operands.pop();
 
-          long long result = 0;
-          bool overflow = false;
-
-          switch (t.type)
+          try
           {
-          case TokenType::op_plus:
-            overflow = __builtin_add_overflow(a, b, &result);
-            break;
-          case TokenType::op_minus:
-            overflow = __builtin_sub_overflow(a, b, &result);
-            break;
-          case TokenType::op_mult:
-            overflow = __builtin_mul_overflow(a, b, &result);
-            break;
-          case TokenType::op_div:
-            if (b == 0)
+            switch (t.type)
             {
-              errorMsg = "Division by zero";
+            case TokenType::op_plus:
+              operands.push(safeAdd(a, b));
+              break;
+            case TokenType::op_minus:
+              operands.push(safeSub(a, b));
+              break;
+            case TokenType::op_mult:
+              operands.push(safeMul(a, b));
+              break;
+            case TokenType::op_div:
+              operands.push(safeDiv(a, b));
+              break;
+            case TokenType::op_mod:
+              operands.push(safeMod(a, b));
+              break;
+            default:
+              errorMsg = "Unknown operator";
               return 0;
             }
-            if (a == std::numeric_limits<long long>::min() && b == -1)
-            {
-              errorMsg = "Division overflow";
-              return 0;
-            }
-            result = a / b;
-            break;
-          case TokenType::op_mod:
-            if (b == 0)
-            {
-              errorMsg = "Modulo by zero";
-              return 0;
-            }
-            result = a % b;
-            if (result < 0 && b > 0)
-            {
-              result += b;
-            }
-            else if (result > 0 && b < 0)
-            {
-              result += b;
-            }
-            break;
-          default:
-            errorMsg = "Unknown operator";
-            return 0;
           }
-
-          if (overflow)
+          catch (const std::overflow_error&)
           {
             errorMsg = "Arithmetic overflow";
             return 0;
           }
-          operands.push(result);
+          catch (const std::logic_error& e)
+          {
+            errorMsg = e.what();
+            return 0;
+          }
         }
       }
 

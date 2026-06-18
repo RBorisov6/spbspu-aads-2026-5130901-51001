@@ -35,8 +35,9 @@ int main(int argc, char* argv[])
       long long res = borisov::evaluateExpression(line, std::cerr);
       results.push(res);
     }
-    catch (const std::exception&)
+    catch (const std::exception& e)
     {
+      std::cerr << e.what() << "\n";
       return 1;
     }
   }
