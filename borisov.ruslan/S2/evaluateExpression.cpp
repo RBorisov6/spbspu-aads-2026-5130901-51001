@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <cstdlib>
+#include <cerrno>
 #include <stdexcept>
 #include <limits>
 
@@ -88,7 +89,13 @@ namespace borisov
         else
         {
           char* end = nullptr;
+          errno = 0;
           long long val = std::strtoll(lex.c_str(), &end, 10);
+          if (errno == ERANGE)
+          {
+            errorMsg = "Number out of range: " + lex;
+            return;
+          }
           if (*end != '\0')
           {
             errorMsg = "Invalid token: " + lex;
