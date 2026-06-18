@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE(tokenizer_recognizes_not_operator)
 BOOST_AUTO_TEST_CASE(tokenizer_rejects_invalid_not_position)
 {
   std::ostringstream err;
-  BOOST_CHECK_NO_THROW(borisov::evaluateExpression("1 !", err));
-  BOOST_CHECK_NO_THROW(borisov::evaluateExpression("! 1 2", err));
+  BOOST_CHECK_THROW(borisov::evaluateExpression("1 !", err), std::runtime_error);
+  BOOST_CHECK_THROW(borisov::evaluateExpression("! 1 2", err), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(infixToPostfix_handles_unary_not)
