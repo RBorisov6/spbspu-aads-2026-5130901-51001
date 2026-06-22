@@ -70,6 +70,27 @@ namespace borisov
       out << "<CORPUS '" << name << "' CREATED: " << count << " documents>\n";
     }
 
+    void cmdBuildTfidf(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      if (!(in >> name))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      buildTfidf(*corpus);
+      double avg = avgVectorLength(*corpus);
+      out << "<TF-IDF BUILT for '" << name
+          << "': vocabulary=" << corpus->idf_.size()
+          << ", documents=" << corpus->docs_.size()
+          << ", avg vector length=" << std::fixed << std::setprecision(1) << avg << ">\n";
+    }
+
     void cmdAddDocument(std::istream& in, std::ostream& out, CorpusTable& table)
     {
       std::string name;
@@ -185,6 +206,7 @@ namespace borisov
       { "load-corpus",      cmdLoadCorpus },
       { "add-document",     cmdAddDocument },
       { "remove-stopwords", cmdRemoveStopwords },
+      { "build-tfidf",      cmdBuildTfidf },
       { "list-corpuses",    cmdListCorpuses },
       { "delete-corpus",    cmdDeleteCorpus },
     };
