@@ -4,88 +4,85 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-namespace borisov
+borisov::List< std::string > borisov::loadWords(const std::string& path)
 {
-  List< std::string > loadWords(const std::string& path)
+  List< std::string > words;
+  std::ifstream f(path);
+  if (!f)
   {
-    List< std::string > words;
-    std::ifstream f(path);
-    if (!f)
-    {
-      return words;
-    }
-    std::string token;
-    while (f >> token)
-    {
-      std::string word;
-      for (std::size_t i = 0; i < token.size(); ++i)
-      {
-        unsigned char c = static_cast< unsigned char >(token[i]);
-        if (std::isalpha(c))
-        {
-          word += static_cast< char >(std::tolower(c));
-        }
-      }
-      if (!word.empty())
-      {
-        words.pushBack(word);
-      }
-    }
     return words;
   }
-
-  List< std::string > listTxtFiles(const std::string& dir)
+  std::string token;
+  while (f >> token)
   {
-    List< std::string > files;
-    DIR* d = opendir(dir.c_str());
-    if (!d)
+    std::string word;
+    for (std::size_t i = 0; i < token.size(); ++i)
     {
-      return files;
-    }
-    struct dirent* ent;
-    while ((ent = readdir(d)) != nullptr)
-    {
-      std::string name(ent->d_name);
-      if (name.size() > 4 && name.substr(name.size() - 4) == ".txt")
+      const unsigned char c = static_cast< unsigned char >(token[i]);
+      if (std::isalpha(c))
       {
-        files.pushBack(dir + "/" + name);
+        word += static_cast< char >(std::tolower(c));
       }
     }
-    closedir(d);
+    if (!word.empty())
+    {
+      words.pushBack(word);
+    }
+  }
+  return words;
+}
+
+borisov::List< std::string > borisov::listTxtFiles(const std::string& dir)
+{
+  List< std::string > files;
+  DIR* d = opendir(dir.c_str());
+  if (!d)
+  {
     return files;
   }
-
-  List< std::string > loadStopwords(const std::string& path)
+  struct dirent* ent;
+  while ((ent = readdir(d)) != nullptr)
   {
-    List< std::string > sw;
-    std::ifstream f(path);
-    if (!f)
+    const std::string name(ent->d_name);
+    if (name.size() > 4 && name.substr(name.size() - 4) == ".txt")
     {
-      return sw;
+      files.pushBack(dir + "/" + name);
     }
-    std::string line;
-    while (std::getline(f, line))
-    {
-      std::string word;
-      for (std::size_t i = 0; i < line.size(); ++i)
-      {
-        unsigned char c = static_cast< unsigned char >(line[i]);
-        if (!std::isspace(c))
-        {
-          word += static_cast< char >(std::tolower(c));
-        }
-      }
-      if (!word.empty())
-      {
-        sw.pushBack(word);
-      }
-    }
+  }
+  closedir(d);
+  return files;
+}
+
+borisov::List< std::string > borisov::loadStopwords(const std::string& path)
+{
+  List< std::string > sw;
+  std::ifstream f(path);
+  if (!f)
+  {
     return sw;
   }
-
-  bool directoryExists(const std::string& path)
+  std::string line;
+  while (std::getline(f, line))
   {
-    struct stat st;
-    return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+    std::string word;
+    for (std::size_t i = 0; i < line.size(); ++i)
+    {
+      const unsigned char c = static_cast< unsigned char >(line[i]);
+      if (!std::isspace(c))
+      {
+        word += static_cast< char >(std::tolower(c));
+      }
+    }
+    if (!word.empty())
+    {
+      sw.pushBack(word);
+    }
   }
+  return sw;
+}
+
+bool borisov::directoryExists(const std::string& path)
+{
+  struct stat st;
+  return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
 }

@@ -62,7 +62,7 @@ namespace borisov
       tfidf_built_(false)
     {}
 
-    std::size_t docCount() const { return docs_.size(); }
+    std::size_t docCount() const;
   };
 
   using CorpusTable = HashTable< std::string, Corpus, XxHash32, std::equal_to< std::string > >;

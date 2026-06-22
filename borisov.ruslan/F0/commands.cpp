@@ -1,12 +1,12 @@
 #include "commands.hpp"
-#include "fileutil.hpp"
-#include "tfidf.hpp"
-#include "kmeans.hpp"
-#include <sstream>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 #include <string>
-#include <cmath>
+#include "fileutil.hpp"
+#include "kmeans.hpp"
+#include "tfidf.hpp"
 
 namespace borisov
 {
@@ -646,23 +646,23 @@ namespace borisov
     };
     const std::size_t CMD_COUNT = sizeof(CMD_TABLE) / sizeof(CMD_TABLE[0]);
   }
+}
 
-  void executeCommand(const std::string& line, CorpusTable& table, std::ostream& out)
+void borisov::executeCommand(const std::string& line, borisov::CorpusTable& table, std::ostream& out)
+{
+  std::istringstream ss(line);
+  std::string cmd;
+  if (!(ss >> cmd))
   {
-    std::istringstream ss(line);
-    std::string cmd;
-    if (!(ss >> cmd))
+    return;
+  }
+  for (std::size_t i = 0; i < CMD_COUNT; ++i)
+  {
+    if (cmd == CMD_TABLE[i].name)
     {
+      CMD_TABLE[i].func(ss, out, table);
       return;
     }
-    for (std::size_t i = 0; i < CMD_COUNT; ++i)
-    {
-      if (cmd == CMD_TABLE[i].name)
-      {
-        CMD_TABLE[i].func(ss, out, table);
-        return;
-      }
-    }
-    out << "<INVALID COMMAND>\n";
   }
+  out << "<INVALID COMMAND>\n";
 }
