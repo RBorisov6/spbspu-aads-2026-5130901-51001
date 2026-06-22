@@ -427,12 +427,13 @@ namespace borisov
     else if (cmd == "create")
     {
       std::string graphName;
-      std::size_t k = 0;
-      if (!(ss >> graphName >> k))
+      if (!(ss >> graphName))
       {
         out << INVALID << '\n';
         return;
       }
+      std::size_t k = 0;
+      ss >> k;  // optional; if absent k stays 0
       std::vector< std::string > vertexes;
       for (std::size_t i = 0; i < k; ++i)
       {
