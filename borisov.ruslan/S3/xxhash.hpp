@@ -40,13 +40,17 @@ namespace borisov
       do
       {
         uint32_t lane = 0;
-        std::memcpy(&lane, p, 4); p += 4;
+        std::memcpy(&lane, p, 4);
+        p += 4;
         v1 = PRIME1 * rotl32(v1 + PRIME2 * lane, 13);
-        std::memcpy(&lane, p, 4); p += 4;
+        std::memcpy(&lane, p, 4);
+        p += 4;
         v2 = PRIME1 * rotl32(v2 + PRIME2 * lane, 13);
-        std::memcpy(&lane, p, 4); p += 4;
+        std::memcpy(&lane, p, 4);
+        p += 4;
         v3 = PRIME1 * rotl32(v3 + PRIME2 * lane, 13);
-        std::memcpy(&lane, p, 4); p += 4;
+        std::memcpy(&lane, p, 4);
+        p += 4;
         v4 = PRIME1 * rotl32(v4 + PRIME2 * lane, 13);
       }
       while (p <= limit);
@@ -63,7 +67,8 @@ namespace borisov
     while (p + 4 <= end)
     {
       uint32_t lane = 0;
-      std::memcpy(&lane, p, 4); p += 4;
+      std::memcpy(&lane, p, 4);
+        p += 4;
       h32 = PRIME1 * rotl32(h32 + PRIME3 * lane, 17);
     }
 

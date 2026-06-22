@@ -42,14 +42,32 @@ namespace borisov
     Value& at(const Key& k);
     const Value& at(const Key& k) const;
 
-    std::size_t size() const { return size_; }
-    std::size_t slots() const { return slots_; }
-    bool empty() const { return size_ == 0; }
+    std::size_t size() const
+    {
+      return size_;
+    }
+
+    std::size_t slots() const
+    {
+      return slots_;
+    }
+
+    bool empty() const
+    {
+      return size_ == 0;
+    }
 
     void clear();
 
-    Bucket& bucket(std::size_t idx) { return buckets_[idx]; }
-    const Bucket& bucket(std::size_t idx) const { return buckets_[idx]; }
+    Bucket& bucket(std::size_t idx)
+    {
+      return buckets_[idx];
+    }
+
+    const Bucket& bucket(std::size_t idx) const
+    {
+      return buckets_[idx];
+    }
 
     iterator begin();
     iterator end();
@@ -319,8 +337,15 @@ namespace borisov
       it_()
     {}
 
-    value_type& operator*() const { return *it_; }
-    value_type* operator->() const { return &(*it_); }
+    value_type& operator*() const
+    {
+      return *it_;
+    }
+
+    value_type* operator->() const
+    {
+      return &(*it_);
+    }
 
     HTIter& operator++()
     {
@@ -341,7 +366,10 @@ namespace borisov
       return table_ == o.table_ && bucketIdx_ == o.bucketIdx_ && it_ == o.it_;
     }
 
-    bool operator!=(const HTIter& o) const { return !(*this == o); }
+    bool operator!=(const HTIter& o) const
+    {
+      return !(*this == o);
+    }
 
   private:
     friend class HashTable< Key, Value, Hash, Equal >;
@@ -387,8 +415,15 @@ namespace borisov
       it_()
     {}
 
-    const value_type& operator*() const { return *it_; }
-    const value_type* operator->() const { return &(*it_); }
+    const value_type& operator*() const
+    {
+      return *it_;
+    }
+
+    const value_type* operator->() const
+    {
+      return &(*it_);
+    }
 
     HTCIter& operator++()
     {
@@ -409,7 +444,10 @@ namespace borisov
       return table_ == o.table_ && bucketIdx_ == o.bucketIdx_ && it_ == o.it_;
     }
 
-    bool operator!=(const HTCIter& o) const { return !(*this == o); }
+    bool operator!=(const HTCIter& o) const
+    {
+      return !(*this == o);
+    }
 
   private:
     friend class HashTable< Key, Value, Hash, Equal >;

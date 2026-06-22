@@ -27,10 +27,10 @@ namespace borisov
     List< std::pair< std::string, unsigned int > > getOutbound(const std::string& v) const;
     List< std::pair< std::string, unsigned int > > getInbound(const std::string& v) const;
 
-    const AdjMap& outgoing() const { return outgoing_; }
-    const AdjMap& incoming() const { return incoming_; }
-    AdjMap& outgoing() { return outgoing_; }
-    AdjMap& incoming() { return incoming_; }
+    const AdjMap& outgoing() const;
+    const AdjMap& incoming() const;
+    AdjMap& outgoing();
+    AdjMap& incoming();
 
   private:
     AdjMap outgoing_;

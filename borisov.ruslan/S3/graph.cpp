@@ -1,157 +1,179 @@
 #include "graph.hpp"
 
-namespace borisov
+static const std::size_t INIT = 64;
+static const std::size_t SEEN_INIT = 128;
+
+borisov::Graph::Graph():
+  outgoing_(INIT),
+  incoming_(INIT)
+{}
+
+const borisov::AdjMap& borisov::Graph::outgoing() const
 {
-  static const std::size_t INIT = 64;
+  return outgoing_;
+}
 
-  Graph::Graph():
-    outgoing_(INIT),
-    incoming_(INIT)
-  {}
+borisov::AdjMap& borisov::Graph::outgoing()
+{
+  return outgoing_;
+}
 
-  void Graph::ensureIn(AdjMap& table, const std::string& v)
+const borisov::AdjMap& borisov::Graph::incoming() const
+{
+  return incoming_;
+}
+
+borisov::AdjMap& borisov::Graph::incoming()
+{
+  return incoming_;
+}
+
+void borisov::Graph::ensureIn(borisov::AdjMap& table, const std::string& v)
+{
+  if (!table.has(v))
   {
-    if (!table.has(v))
+    if (table.size() >= table.slots())
     {
-      if (table.size() >= table.slots())
+      table.rehash(table.slots() * 2 + 1);
+    }
+    table.add(v, AdjTable(INIT));
+  }
+}
+
+void borisov::Graph::addWeightToAdj(borisov::AdjTable& adj,
+  const std::string& neighbor, unsigned int w)
+{
+  if (!adj.has(neighbor))
+  {
+    if (adj.size() >= adj.slots())
+    {
+      adj.rehash(adj.slots() * 2 + 1);
+    }
+    adj.add(neighbor, List< unsigned int >());
+  }
+  adj.at(neighbor).pushBack(w);
+}
+
+void borisov::Graph::removeWeightFromAdj(borisov::AdjTable& adj,
+  const std::string& neighbor, unsigned int w)
+{
+  List< unsigned int >& weights = adj.at(neighbor);
+  for (auto it = weights.begin(); it != weights.end(); ++it)
+  {
+    if (*it == w)
+    {
+      weights.erase(it);
+      if (weights.empty())
       {
-        table.rehash(table.slots() * 2 + 1);
+        adj.drop(neighbor);
       }
-      table.add(v, AdjTable(INIT));
+      return;
     }
   }
+  throw std::out_of_range("weight not found");
+}
 
-  void Graph::addWeightToAdj(AdjTable& adj, const std::string& neighbor, unsigned int w)
+void borisov::Graph::addVertex(const std::string& v)
+{
+  ensureIn(outgoing_, v);
+}
+
+bool borisov::Graph::hasVertex(const std::string& v) const
+{
+  return outgoing_.has(v) || incoming_.has(v);
+}
+
+void borisov::Graph::addEdge(const std::string& from, const std::string& to, unsigned int w)
+{
+  ensureIn(outgoing_, from);
+  ensureIn(outgoing_, to);
+  ensureIn(incoming_, from);
+  ensureIn(incoming_, to);
+  addWeightToAdj(outgoing_.at(from), to, w);
+  addWeightToAdj(incoming_.at(to), from, w);
+}
+
+void borisov::Graph::removeEdge(const std::string& from, const std::string& to, unsigned int w)
+{
+  if (!outgoing_.has(from) || !outgoing_.at(from).has(to))
   {
-    if (!adj.has(neighbor))
+    throw std::out_of_range("edge not found");
+  }
+  removeWeightFromAdj(outgoing_.at(from), to, w);
+  removeWeightFromAdj(incoming_.at(to), from, w);
+}
+
+borisov::List< std::string > borisov::Graph::getVertexes() const
+{
+  HashTable< std::string, bool, XxHash32 > seen(SEEN_INIT);
+  List< std::string > result;
+
+  auto addIfNew = [&](const std::string& name)
+  {
+    if (!seen.has(name))
     {
-      if (adj.size() >= adj.slots())
+      if (seen.size() >= seen.slots())
       {
-        adj.rehash(adj.slots() * 2 + 1);
+        seen.rehash(seen.slots() * 2 + 1);
       }
-      adj.add(neighbor, List< unsigned int >());
+      seen.add(name, true);
+      result.pushBack(name);
     }
-    adj.at(neighbor).pushBack(w);
-  }
+  };
 
-  void Graph::removeWeightFromAdj(AdjTable& adj, const std::string& neighbor, unsigned int w)
+  for (auto it = outgoing_.begin(); it != outgoing_.end(); ++it)
   {
-    List< unsigned int >& weights = adj.at(neighbor);
-    for (auto it = weights.begin(); it != weights.end(); ++it)
-    {
-      if (*it == w)
-      {
-        weights.erase(it);
-        if (weights.empty())
-        {
-          adj.drop(neighbor);
-        }
-        return;
-      }
-    }
-    throw std::out_of_range("weight not found");
+    addIfNew(it->first);
   }
-
-  void Graph::addVertex(const std::string& v)
+  for (auto it = incoming_.begin(); it != incoming_.end(); ++it)
   {
-    ensureIn(outgoing_, v);
+    addIfNew(it->first);
   }
+  return result;
+}
 
-  bool Graph::hasVertex(const std::string& v) const
+borisov::List< std::pair< std::string, unsigned int > >
+borisov::Graph::getOutbound(const std::string& v) const
+{
+  if (!hasVertex(v))
   {
-    return outgoing_.has(v) || incoming_.has(v);
+    throw std::out_of_range("vertex not found");
   }
-
-  void Graph::addEdge(const std::string& from, const std::string& to, unsigned int w)
+  List< std::pair< std::string, unsigned int > > result;
+  if (!outgoing_.has(v))
   {
-    ensureIn(outgoing_, from);
-    ensureIn(outgoing_, to);
-    ensureIn(incoming_, from);
-    ensureIn(incoming_, to);
-    addWeightToAdj(outgoing_.at(from), to, w);
-    addWeightToAdj(incoming_.at(to), from, w);
-  }
-
-  void Graph::removeEdge(const std::string& from, const std::string& to, unsigned int w)
-  {
-    if (!outgoing_.has(from) || !outgoing_.at(from).has(to))
-    {
-      throw std::out_of_range("edge not found");
-    }
-    removeWeightFromAdj(outgoing_.at(from), to, w);
-    removeWeightFromAdj(incoming_.at(to), from, w);
-  }
-
-  List< std::string > Graph::getVertexes() const
-  {
-    HashTable< std::string, bool, XxHash32 > seen(128);
-    List< std::string > result;
-
-    auto addIfNew = [&](const std::string& name)
-    {
-      if (!seen.has(name))
-      {
-        if (seen.size() >= seen.slots())
-        {
-          seen.rehash(seen.slots() * 2 + 1);
-        }
-        seen.add(name, true);
-        result.pushBack(name);
-      }
-    };
-
-    for (auto it = outgoing_.begin(); it != outgoing_.end(); ++it)
-    {
-      addIfNew(it->first);
-    }
-    for (auto it = incoming_.begin(); it != incoming_.end(); ++it)
-    {
-      addIfNew(it->first);
-    }
     return result;
   }
-
-  List< std::pair< std::string, unsigned int > > Graph::getOutbound(const std::string& v) const
+  const AdjTable& adj = outgoing_.at(v);
+  for (auto it = adj.begin(); it != adj.end(); ++it)
   {
-    if (!hasVertex(v))
+    for (auto wt = it->second.begin(); wt != it->second.end(); ++wt)
     {
-      throw std::out_of_range("vertex not found");
+      result.pushBack(std::make_pair(it->first, *wt));
     }
-    List< std::pair< std::string, unsigned int > > result;
-    if (!outgoing_.has(v))
-    {
-      return result;
-    }
-    const AdjTable& adj = outgoing_.at(v);
-    for (auto it = adj.begin(); it != adj.end(); ++it)
-    {
-      for (auto wt = it->second.begin(); wt != it->second.end(); ++wt)
-      {
-        result.pushBack(std::make_pair(it->first, *wt));
-      }
-    }
+  }
+  return result;
+}
+
+borisov::List< std::pair< std::string, unsigned int > >
+borisov::Graph::getInbound(const std::string& v) const
+{
+  if (!hasVertex(v))
+  {
+    throw std::out_of_range("vertex not found");
+  }
+  List< std::pair< std::string, unsigned int > > result;
+  if (!incoming_.has(v))
+  {
     return result;
   }
-
-  List< std::pair< std::string, unsigned int > > Graph::getInbound(const std::string& v) const
+  const AdjTable& adj = incoming_.at(v);
+  for (auto it = adj.begin(); it != adj.end(); ++it)
   {
-    if (!hasVertex(v))
+    for (auto wt = it->second.begin(); wt != it->second.end(); ++wt)
     {
-      throw std::out_of_range("vertex not found");
+      result.pushBack(std::make_pair(it->first, *wt));
     }
-    List< std::pair< std::string, unsigned int > > result;
-    if (!incoming_.has(v))
-    {
-      return result;
-    }
-    const AdjTable& adj = incoming_.at(v);
-    for (auto it = adj.begin(); it != adj.end(); ++it)
-    {
-      for (auto wt = it->second.begin(); wt != it->second.end(); ++wt)
-      {
-        result.pushBack(std::make_pair(it->first, *wt));
-      }
-    }
-    return result;
   }
+  return result;
 }
