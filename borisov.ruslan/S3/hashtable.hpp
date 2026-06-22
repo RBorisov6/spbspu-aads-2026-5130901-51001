@@ -31,15 +31,12 @@ namespace borisov
     HashTable& operator=(const HashTable& other);
     HashTable& operator=(HashTable&& other) noexcept;
 
-    // Throws std::overflow_error if size_ >= slots_ (table is full, call rehash first)
     void add(const Key& k, const Value& v);
 
-    // Throws std::out_of_range if key not found
     Value drop(const Key& k);
 
     bool has(const Key& k) const;
 
-    // Rebuild the table with a new slot count
     void rehash(std::size_t slots);
 
     Value& at(const Key& k);
@@ -252,8 +249,6 @@ namespace borisov
     size_ = 0;
   }
 
-  // ---- Iterator implementations ----
-
   template< class Key, class Value, class Hash, class Equal >
   typename HashTable< Key, Value, Hash, Equal >::iterator
   HashTable< Key, Value, Hash, Equal >::begin()
@@ -309,8 +304,6 @@ namespace borisov
   {
     return end();
   }
-
-  // ---- HTIter ----
 
   template< class Key, class Value, class Hash, class Equal >
   class HTIter
@@ -379,8 +372,6 @@ namespace borisov
       }
     }
   };
-
-  // ---- HTCIter ----
 
   template< class Key, class Value, class Hash, class Equal >
   class HTCIter
