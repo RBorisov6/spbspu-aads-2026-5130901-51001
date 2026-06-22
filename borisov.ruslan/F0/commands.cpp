@@ -242,6 +242,125 @@ namespace borisov
       out << "Total: " << std::fixed << std::setprecision(2) << total << '\n';
     }
 
+    void cmdSaveModel(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      std::string filename;
+      if (!(in >> name >> filename))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      std::ofstream f(filename);
+      if (!f)
+      {
+        out << "<CANNOT OPEN FILE>\n";
+        return;
+      }
+      f << "K " << corpus->k_ << '\n';
+      int ci = 0;
+      for (auto cit = corpus->centroids_.cbegin(); cit != corpus->centroids_.cend(); ++cit, ++ci)
+      {
+        f << "CENTROID " << ci << '\n';
+        for (auto eit = cit->cbegin(); eit != cit->cend(); ++eit)
+        {
+          f << eit->first << ' ' << eit->second << '\n';
+        }
+        f << "CENTROID_END\n";
+      }
+      f << "ASSIGNMENTS\n";
+      for (auto dit = corpus->docs_.cbegin(); dit != corpus->docs_.cend(); ++dit)
+      {
+        f << dit->name_ << ' ' << dit->cluster_ << '\n';
+      }
+      out << "<MODEL SAVED to " << filename << ">\n";
+    }
+
+    void cmdLoadModel(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      std::string filename;
+      if (!(in >> name >> filename))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      std::ifstream f(filename);
+      if (!f)
+      {
+        out << "<FILE NOT FOUND>\n";
+        return;
+      }
+      std::string token;
+      int k = 0;
+      if (!(f >> token >> k) || token != "K")
+      {
+        out << "<INVALID MODEL FILE>\n";
+        return;
+      }
+      corpus->k_ = k;
+      corpus->centroids_.clear();
+      while (f >> token)
+      {
+        if (token == "ASSIGNMENTS")
+        {
+          break;
+        }
+        if (token != "CENTROID")
+        {
+          continue;
+        }
+        int cid = 0;
+        f >> cid;
+        WeightMap centroid(64);
+        std::string line;
+        std::getline(f, line);
+        while (std::getline(f, line))
+        {
+          if (line == "CENTROID_END")
+          {
+            break;
+          }
+          std::istringstream ss(line);
+          std::string word;
+          double weight = 0.0;
+          if (ss >> word >> weight)
+          {
+            if (centroid.size() >= centroid.slots() * 3 / 4)
+            {
+              centroid.rehash(centroid.slots() * 2 + 1);
+            }
+            centroid.add(word, weight);
+          }
+        }
+        corpus->centroids_.pushBack(centroid);
+      }
+      std::string docName;
+      int clusterIdx = 0;
+      while (f >> docName >> clusterIdx)
+      {
+        for (auto dit = corpus->docs_.begin(); dit != corpus->docs_.end(); ++dit)
+        {
+          if (dit->name_ == docName)
+          {
+            dit->cluster_ = clusterIdx;
+            break;
+          }
+        }
+      }
+      out << "<MODEL LOADED into '" << name << "': " << k << " clusters>\n";
+    }
+
     void cmdShowClusters(std::istream& in, std::ostream& out, CorpusTable& table)
     {
       std::string name;
@@ -519,6 +638,8 @@ namespace borisov
       { "show-cluster-words", cmdShowClusterWords },
       { "find-common",        cmdFindCommon },
       { "wcss",               cmdWcss },
+      { "save-model",         cmdSaveModel },
+      { "load-model",         cmdLoadModel },
       { "build-tfidf",      cmdBuildTfidf },
       { "list-corpuses",    cmdListCorpuses },
       { "delete-corpus",    cmdDeleteCorpus },
