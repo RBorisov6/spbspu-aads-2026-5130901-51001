@@ -85,6 +85,163 @@ namespace borisov
       return result;
     }
 
+    void cmdShowClusterWords(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      int cid = 0;
+      int n = 0;
+      if (!(in >> name >> cid >> n))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      WeightMap sum(64);
+      int count = 0;
+      for (auto dit = corpus->docs_.cbegin(); dit != corpus->docs_.cend(); ++dit)
+      {
+        if (dit->cluster_ != cid)
+        {
+          continue;
+        }
+        for (auto eit = dit->weights_.cbegin(); eit != dit->weights_.cend(); ++eit)
+        {
+          safeAdd(sum, eit->first, eit->second);
+        }
+        ++count;
+      }
+      if (count > 0)
+      {
+        for (auto eit = sum.begin(); eit != sum.end(); ++eit)
+        {
+          eit->second /= static_cast< double >(count);
+        }
+      }
+      out << "Top words for cluster " << cid << ":\n";
+      List< std::pair< std::string, double > > sorted = sortedByWeight(sum);
+      int shown = 0;
+      bool first = true;
+      for (auto sit = sorted.begin(); sit != sorted.end() && shown < n; ++sit, ++shown)
+      {
+        if (!first)
+        {
+          out << ", ";
+        }
+        out << "\"" << sit->first << "\" ("
+            << std::fixed << std::setprecision(2) << sit->second << ")";
+        first = false;
+      }
+      out << '\n';
+    }
+
+    void cmdFindCommon(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      int cid = 0;
+      int minDocs = 0;
+      if (!(in >> name >> cid >> minDocs))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      HashTable< std::string, int, XxHash32, std::equal_to< std::string > > docCount(64);
+      for (auto dit = corpus->docs_.cbegin(); dit != corpus->docs_.cend(); ++dit)
+      {
+        if (dit->cluster_ != cid)
+        {
+          continue;
+        }
+        for (auto eit = dit->weights_.cbegin(); eit != dit->weights_.cend(); ++eit)
+        {
+          if (docCount.size() >= docCount.slots() * 3 / 4)
+          {
+            docCount.rehash(docCount.slots() * 2 + 1);
+          }
+          if (docCount.has(eit->first))
+          {
+            docCount.at(eit->first) += 1;
+          }
+          else
+          {
+            docCount.add(eit->first, 1);
+          }
+        }
+      }
+      out << "Common words in cluster " << cid
+          << " (present in >=" << minDocs << " docs):\n";
+      List< std::pair< std::string, int > > qualifying;
+      for (auto it = docCount.cbegin(); it != docCount.cend(); ++it)
+      {
+        if (it->second >= minDocs)
+        {
+          auto pos = qualifying.begin();
+          while (pos != qualifying.end() && pos->second >= it->second)
+          {
+            ++pos;
+          }
+          qualifying.insert(pos, *it);
+        }
+      }
+      bool first = true;
+      for (auto it = qualifying.begin(); it != qualifying.end(); ++it)
+      {
+        if (!first)
+        {
+          out << ", ";
+        }
+        out << "\"" << it->first << "\" (" << it->second << " docs)";
+        first = false;
+      }
+      if (!qualifying.empty())
+      {
+        out << '\n';
+      }
+    }
+
+    void cmdWcss(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      if (!(in >> name))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      out << "WCSS for '" << name << "':\n";
+      double total = 0.0;
+      int ci = 0;
+      for (auto cit = corpus->centroids_.cbegin(); cit != corpus->centroids_.cend(); ++cit, ++ci)
+      {
+        double clusterWcss = 0.0;
+        for (auto dit = corpus->docs_.cbegin(); dit != corpus->docs_.cend(); ++dit)
+        {
+          if (dit->cluster_ != ci)
+          {
+            continue;
+          }
+          double sim = cosineSim(dit->weights_, *cit);
+          clusterWcss += 1.0 - sim;
+        }
+        out << "Cluster " << ci << ": "
+            << std::fixed << std::setprecision(2) << clusterWcss << '\n';
+        total += clusterWcss;
+      }
+      out << "Total: " << std::fixed << std::setprecision(2) << total << '\n';
+    }
+
     void cmdShowClusters(std::istream& in, std::ostream& out, CorpusTable& table)
     {
       std::string name;
@@ -357,8 +514,11 @@ namespace borisov
       { "remove-stopwords", cmdRemoveStopwords },
       { "set-k",            cmdSetK },
       { "cluster",          cmdCluster },
-      { "show-clusters",    cmdShowClusters },
-      { "show-centroids",   cmdShowCentroids },
+      { "show-clusters",      cmdShowClusters },
+      { "show-centroids",     cmdShowCentroids },
+      { "show-cluster-words", cmdShowClusterWords },
+      { "find-common",        cmdFindCommon },
+      { "wcss",               cmdWcss },
       { "build-tfidf",      cmdBuildTfidf },
       { "list-corpuses",    cmdListCorpuses },
       { "delete-corpus",    cmdDeleteCorpus },
