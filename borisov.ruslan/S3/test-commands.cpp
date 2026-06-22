@@ -6,7 +6,6 @@
 
 namespace
 {
-  // Helper: build a GraphTable from a string describing the input file
   borisov::GraphTable makeGraphs(const std::string& input)
   {
     borisov::GraphTable graphs(16);

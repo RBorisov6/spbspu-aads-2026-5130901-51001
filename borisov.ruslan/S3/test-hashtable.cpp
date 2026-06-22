@@ -110,11 +110,9 @@ BOOST_AUTO_TEST_CASE(hashtable_move_constructor)
 
 BOOST_AUTO_TEST_CASE(hashtable_multiple_in_same_bucket)
 {
-  // Force collisions by using only 1 slot
   HT t(1);
   t.add("aaa", 1);
   BOOST_CHECK_THROW(t.add("bbb", 2), std::overflow_error);
-  // After rehash both fit
   t.rehash(4);
   t.add("bbb", 2);
   BOOST_CHECK(t.has("aaa"));
