@@ -265,6 +265,16 @@ namespace borisov
       return rotateRight(it);
     }
 
+    std::size_t height() const
+    {
+      return nodeHeight(root_);
+    }
+
+    std::size_t height(const_iterator it) const
+    {
+      return nodeHeight(it.node_);
+    }
+
   private:
     Node* root_;
     std::size_t size_;
@@ -367,6 +377,17 @@ namespace borisov
       }
       delete node;
       --size_;
+    }
+
+    static std::size_t nodeHeight(const Node* n)
+    {
+      if (!n)
+      {
+        return 0;
+      }
+      const std::size_t lh = nodeHeight(n->left_);
+      const std::size_t rh = nodeHeight(n->right_);
+      return 1 + (lh > rh ? lh : rh);
     }
   };
 
