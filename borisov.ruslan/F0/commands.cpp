@@ -70,6 +70,95 @@ namespace borisov
       out << "<CORPUS '" << name << "' CREATED: " << count << " documents>\n";
     }
 
+    List< std::pair< std::string, double > > sortedByWeight(const WeightMap& m)
+    {
+      List< std::pair< std::string, double > > result;
+      for (auto it = m.cbegin(); it != m.cend(); ++it)
+      {
+        auto pos = result.begin();
+        while (pos != result.end() && pos->second >= it->second)
+        {
+          ++pos;
+        }
+        result.insert(pos, *it);
+      }
+      return result;
+    }
+
+    void cmdShowClusters(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      if (!(in >> name))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      for (int ci = 0; ci < corpus->k_; ++ci)
+      {
+        int size = 0;
+        for (auto dit = corpus->docs_.cbegin(); dit != corpus->docs_.cend(); ++dit)
+        {
+          if (dit->cluster_ == ci)
+          {
+            ++size;
+          }
+        }
+        out << "Cluster " << ci << " (size=" << size << "):";
+        bool first = true;
+        for (auto dit = corpus->docs_.cbegin(); dit != corpus->docs_.cend(); ++dit)
+        {
+          if (dit->cluster_ != ci)
+          {
+            continue;
+          }
+          if (!first)
+          {
+            out << ",";
+          }
+          out << " " << dit->name_;
+          first = false;
+        }
+        out << '\n';
+      }
+    }
+
+    void cmdShowCentroids(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      if (!(in >> name))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      int ci = 0;
+      for (auto cit = corpus->centroids_.cbegin(); cit != corpus->centroids_.cend(); ++cit, ++ci)
+      {
+        out << "Centroid " << ci << ":";
+        List< std::pair< std::string, double > > sorted = sortedByWeight(*cit);
+        int shown = 0;
+        for (auto sit = sorted.begin(); sit != sorted.end() && shown < 5; ++sit, ++shown)
+        {
+          if (shown > 0)
+          {
+            out << ",";
+          }
+          out << " \"" << sit->first << "\" ("
+              << std::fixed << std::setprecision(2) << sit->second << ")";
+        }
+        out << '\n';
+      }
+    }
+
     void cmdSetK(std::istream& in, std::ostream& out, CorpusTable& table)
     {
       std::string name;
@@ -268,6 +357,8 @@ namespace borisov
       { "remove-stopwords", cmdRemoveStopwords },
       { "set-k",            cmdSetK },
       { "cluster",          cmdCluster },
+      { "show-clusters",    cmdShowClusters },
+      { "show-centroids",   cmdShowCentroids },
       { "build-tfidf",      cmdBuildTfidf },
       { "list-corpuses",    cmdListCorpuses },
       { "delete-corpus",    cmdDeleteCorpus },
