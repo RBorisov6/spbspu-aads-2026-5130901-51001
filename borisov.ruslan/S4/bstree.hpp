@@ -193,6 +193,78 @@ namespace borisov
       return end();
     }
 
+    const_iterator rotateLeft(const_iterator it)
+    {
+      Node* n = const_cast< Node* >(it.node_);
+      Node* p = n->parent_;
+      p->right_ = n->left_;
+      if (n->left_)
+      {
+        n->left_->parent_ = p;
+      }
+      n->left_ = p;
+      n->parent_ = p->parent_;
+      if (p->parent_)
+      {
+        if (p->parent_->left_ == p)
+        {
+          p->parent_->left_ = n;
+        }
+        else
+        {
+          p->parent_->right_ = n;
+        }
+      }
+      else
+      {
+        root_ = n;
+      }
+      p->parent_ = n;
+      return const_iterator(n);
+    }
+
+    const_iterator rotateRight(const_iterator it)
+    {
+      Node* n = const_cast< Node* >(it.node_);
+      Node* p = n->parent_;
+      p->left_ = n->right_;
+      if (n->right_)
+      {
+        n->right_->parent_ = p;
+      }
+      n->right_ = p;
+      n->parent_ = p->parent_;
+      if (p->parent_)
+      {
+        if (p->parent_->left_ == p)
+        {
+          p->parent_->left_ = n;
+        }
+        else
+        {
+          p->parent_->right_ = n;
+        }
+      }
+      else
+      {
+        root_ = n;
+      }
+      p->parent_ = n;
+      return const_iterator(n);
+    }
+
+    const_iterator rotateLargeLeft(const_iterator it)
+    {
+      rotateRight(it);
+      return rotateLeft(it);
+    }
+
+    const_iterator rotateLargeRight(const_iterator it)
+    {
+      rotateLeft(it);
+      return rotateRight(it);
+    }
+
   private:
     Node* root_;
     std::size_t size_;
