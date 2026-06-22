@@ -1,11 +1,8 @@
 #include "commands.hpp"
-#include "graph.hpp"
-#include "../common/list.hpp"
-#include <iostream>
 #include <sstream>
 #include <string>
-#include <algorithm>
 #include <vector>
+#include <algorithm>
 
 namespace borisov
 {
@@ -13,473 +10,329 @@ namespace borisov
   {
     const char* INVALID = "<INVALID COMMAND>";
 
-    // Collect all keys from a HashTable<string,...> into a List<string>
-    List< std::string > collectVertexNames(const Graph::VertexTable& vt)
+    void ensureGraphSlot(GraphTable& graphs)
     {
-      List< std::string > names;
-      for (auto it = vt.begin(); it != vt.end(); ++it)
+      if (graphs.size() >= graphs.slots())
       {
-        names.pushBack(it->first);
+        graphs.rehash(graphs.slots() * 2 + 1);
       }
-      return names;
     }
 
-    List< std::string > collectGraphNames(const GraphTable& gt)
+    void printEdges(std::ostream& out,
+      const List< std::pair< std::string, unsigned int > >& edges)
     {
-      List< std::string > names;
-      for (auto it = gt.begin(); it != gt.end(); ++it)
-      {
-        names.pushBack(it->first);
-      }
-      return names;
-    }
-
-    // Sort a List<string> by insertion sort (C++14, no stdlib sort on list)
-    void insertionSort(List< std::string >& lst)
-    {
-      if (lst.size() <= 1)
-      {
-        return;
-      }
-      // Build sorted vector then reconstruct list
-      std::vector< std::string > v;
-      for (auto it = lst.begin(); it != lst.end(); ++it)
+      std::vector< std::pair< std::string, unsigned int > > v;
+      for (auto it = edges.begin(); it != edges.end(); ++it)
       {
         v.push_back(*it);
       }
-      std::sort(v.begin(), v.end());
-      lst.clear();
-      for (auto& s : v)
-      {
-        lst.pushBack(s);
-      }
-    }
-
-    void cmdGraphs(GraphTable& graphs, std::ostream& out)
-    {
-      List< std::string > names = collectGraphNames(graphs);
-      insertionSort(names);
-      for (auto it = names.begin(); it != names.end(); ++it)
-      {
-        out << *it << '\n';
-      }
-    }
-
-    void cmdVertexes(const std::string& graphName, GraphTable& graphs, std::ostream& out)
-    {
-      if (!graphs.has(graphName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      const Graph& g = graphs.at(graphName);
-      List< std::string > names = collectVertexNames(g.vertices());
-      insertionSort(names);
-      for (auto it = names.begin(); it != names.end(); ++it)
-      {
-        out << *it << '\n';
-      }
-    }
-
-    void cmdOutbound(const std::string& graphName, const std::string& vertex,
-                     GraphTable& graphs, std::ostream& out)
-    {
-      if (!graphs.has(graphName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      const Graph& g = graphs.at(graphName);
-      if (!g.hasVertex(vertex))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-
-      // Collect all destinations from this vertex
-      struct EdgeInfo
-      {
-        std::string to;
-        std::vector< unsigned int > weights;
-      };
-      std::vector< EdgeInfo > edges;
-
-      for (auto it = g.edges().begin(); it != g.edges().end(); ++it)
-      {
-        if (it->first.first == vertex)
+      std::sort(v.begin(), v.end(),
+        [](const std::pair< std::string, unsigned int >& a,
+           const std::pair< std::string, unsigned int >& b)
         {
-          EdgeInfo e;
-          e.to = it->first.second;
-          for (auto wt = it->second.begin(); wt != it->second.end(); ++wt)
-          {
-            e.weights.push_back(*wt);
-          }
-          std::sort(e.weights.begin(), e.weights.end());
-          edges.push_back(e);
-        }
-      }
-
-      std::sort(edges.begin(), edges.end(),
-        [](const EdgeInfo& a, const EdgeInfo& b) { return a.to < b.to; });
-
-      for (auto& e : edges)
+          return a.first < b.first || (a.first == b.first && a.second < b.second);
+        });
+      std::size_t i = 0;
+      while (i < v.size())
       {
-        out << e.to;
-        for (auto w : e.weights)
+        std::string name = v[i].first;
+        out << name;
+        while (i < v.size() && v[i].first == name)
         {
-          out << ' ' << w;
+          out << ' ' << v[i].second;
+          ++i;
         }
         out << '\n';
       }
-    }
-
-    void cmdInbound(const std::string& graphName, const std::string& vertex,
-                    GraphTable& graphs, std::ostream& out)
-    {
-      if (!graphs.has(graphName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      const Graph& g = graphs.at(graphName);
-      if (!g.hasVertex(vertex))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-
-      struct EdgeInfo
-      {
-        std::string from;
-        std::vector< unsigned int > weights;
-      };
-      std::vector< EdgeInfo > edges;
-
-      for (auto it = g.edges().begin(); it != g.edges().end(); ++it)
-      {
-        if (it->first.second == vertex)
-        {
-          EdgeInfo e;
-          e.from = it->first.first;
-          for (auto wt = it->second.begin(); wt != it->second.end(); ++wt)
-          {
-            e.weights.push_back(*wt);
-          }
-          std::sort(e.weights.begin(), e.weights.end());
-          edges.push_back(e);
-        }
-      }
-
-      std::sort(edges.begin(), edges.end(),
-        [](const EdgeInfo& a, const EdgeInfo& b) { return a.from < b.from; });
-
-      for (auto& e : edges)
-      {
-        out << e.from;
-        for (auto w : e.weights)
-        {
-          out << ' ' << w;
-        }
-        out << '\n';
-      }
-    }
-
-    void cmdBind(const std::string& graphName, const std::string& va,
-                 const std::string& vb, unsigned int weight,
-                 GraphTable& graphs, std::ostream& out)
-    {
-      if (!graphs.has(graphName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      graphs.at(graphName).addEdge(va, vb, weight);
-    }
-
-    void cmdCut(const std::string& graphName, const std::string& va,
-                const std::string& vb, unsigned int weight,
-                GraphTable& graphs, std::ostream& out)
-    {
-      if (!graphs.has(graphName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      Graph& g = graphs.at(graphName);
-      if (!g.hasVertex(va) || !g.hasVertex(vb))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      try
-      {
-        g.removeEdge(va, vb, weight);
-      }
-      catch (const std::out_of_range&)
-      {
-        out << INVALID << '\n';
-      }
-    }
-
-    void cmdCreate(const std::string& graphName,
-                   const std::vector< std::string >& vertexes,
-                   GraphTable& graphs, std::ostream& out)
-    {
-      if (graphs.has(graphName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      if (graphs.size() >= graphs.slots())
-      {
-        graphs.rehash(graphs.slots() * 2 + 1);
-      }
-      Graph g;
-      for (auto& v : vertexes)
-      {
-        g.addVertex(v);
-      }
-      graphs.add(graphName, g);
-    }
-
-    void cmdMerge(const std::string& newName, const std::string& old1,
-                  const std::string& old2, GraphTable& graphs, std::ostream& out)
-    {
-      if (!graphs.has(old1) || !graphs.has(old2))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      if (graphs.has(newName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      const Graph& g1 = graphs.at(old1);
-      const Graph& g2 = graphs.at(old2);
-      Graph merged;
-
-      auto copyEdges = [&](const Graph& src)
-      {
-        for (auto it = src.edges().begin(); it != src.edges().end(); ++it)
-        {
-          const std::string& from = it->first.first;
-          const std::string& to   = it->first.second;
-          for (auto wt = it->second.begin(); wt != it->second.end(); ++wt)
-          {
-            merged.addEdge(from, to, *wt);
-          }
-        }
-        for (auto it = src.vertices().begin(); it != src.vertices().end(); ++it)
-        {
-          merged.addVertex(it->first);
-        }
-      };
-
-      copyEdges(g1);
-      copyEdges(g2);
-
-      if (graphs.size() >= graphs.slots())
-      {
-        graphs.rehash(graphs.slots() * 2 + 1);
-      }
-      graphs.add(newName, merged);
-    }
-
-    void cmdExtract(const std::string& newName, const std::string& oldName,
-                    const std::vector< std::string >& vertexes,
-                    GraphTable& graphs, std::ostream& out)
-    {
-      if (!graphs.has(oldName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      if (graphs.has(newName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      const Graph& src = graphs.at(oldName);
-      for (auto& v : vertexes)
-      {
-        if (!src.hasVertex(v))
-        {
-          out << INVALID << '\n';
-          return;
-        }
-      }
-
-      Graph sub;
-      // Build lookup set for selected vertices
-      HashTable< std::string, bool, XxHash32 > selected(64);
-      for (auto& v : vertexes)
-      {
-        sub.addVertex(v);
-        if (!selected.has(v))
-        {
-          selected.add(v, true);
-        }
-      }
-
-      // Copy edges where both endpoints are in selected set
-      for (auto it = src.edges().begin(); it != src.edges().end(); ++it)
-      {
-        const std::string& from = it->first.first;
-        const std::string& to   = it->first.second;
-        if (selected.has(from) && selected.has(to))
-        {
-          for (auto wt = it->second.begin(); wt != it->second.end(); ++wt)
-          {
-            sub.addEdge(from, to, *wt);
-          }
-        }
-      }
-
-      if (graphs.size() >= graphs.slots())
-      {
-        graphs.rehash(graphs.slots() * 2 + 1);
-      }
-      graphs.add(newName, sub);
     }
   }
 
-  void sortStringList(List< std::string >& lst)
+  void cmdGraphs(std::istream&, std::ostream& out, GraphTable& graphs)
   {
+    std::vector< std::string > names;
+    for (auto it = graphs.begin(); it != graphs.end(); ++it)
+    {
+      names.push_back(it->first);
+    }
+    std::sort(names.begin(), names.end());
+    for (auto& n : names)
+    {
+      out << n << '\n';
+    }
+  }
+
+  void cmdVertexes(std::istream& in, std::ostream& out, GraphTable& graphs)
+  {
+    std::string graphName;
+    if (!(in >> graphName) || !graphs.has(graphName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    auto verts = graphs.at(graphName).getVertexes();
     std::vector< std::string > v;
-    for (auto it = lst.begin(); it != lst.end(); ++it)
+    for (auto it = verts.begin(); it != verts.end(); ++it)
     {
       v.push_back(*it);
     }
     std::sort(v.begin(), v.end());
-    lst.clear();
     for (auto& s : v)
     {
-      lst.pushBack(s);
+      out << s << '\n';
     }
+  }
+
+  void cmdOutbound(std::istream& in, std::ostream& out, GraphTable& graphs)
+  {
+    std::string graphName, vertex;
+    if (!(in >> graphName >> vertex) || !graphs.has(graphName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    try
+    {
+      printEdges(out, graphs.at(graphName).getOutbound(vertex));
+    }
+    catch (const std::out_of_range&)
+    {
+      out << INVALID << '\n';
+    }
+  }
+
+  void cmdInbound(std::istream& in, std::ostream& out, GraphTable& graphs)
+  {
+    std::string graphName, vertex;
+    if (!(in >> graphName >> vertex) || !graphs.has(graphName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    try
+    {
+      printEdges(out, graphs.at(graphName).getInbound(vertex));
+    }
+    catch (const std::out_of_range&)
+    {
+      out << INVALID << '\n';
+    }
+  }
+
+  void cmdBind(std::istream& in, std::ostream& out, GraphTable& graphs)
+  {
+    std::string graphName, va, vb;
+    unsigned int weight = 0;
+    if (!(in >> graphName >> va >> vb >> weight) || !graphs.has(graphName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    graphs.at(graphName).addEdge(va, vb, weight);
+  }
+
+  void cmdCut(std::istream& in, std::ostream& out, GraphTable& graphs)
+  {
+    std::string graphName, va, vb;
+    unsigned int weight = 0;
+    if (!(in >> graphName >> va >> vb >> weight) || !graphs.has(graphName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    Graph& g = graphs.at(graphName);
+    if (!g.hasVertex(va) || !g.hasVertex(vb))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    try
+    {
+      g.removeEdge(va, vb, weight);
+    }
+    catch (const std::out_of_range&)
+    {
+      out << INVALID << '\n';
+    }
+  }
+
+  void cmdCreate(std::istream& in, std::ostream& out, GraphTable& graphs)
+  {
+    std::string graphName;
+    if (!(in >> graphName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    if (graphs.has(graphName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    std::size_t k = 0;
+    in >> k;
+    std::vector< std::string > vertexes;
+    for (std::size_t i = 0; i < k; ++i)
+    {
+      std::string v;
+      if (!(in >> v))
+      {
+        out << INVALID << '\n';
+        return;
+      }
+      vertexes.push_back(v);
+    }
+    ensureGraphSlot(graphs);
+    graphs.add(graphName, Graph());
+    Graph& g = graphs.at(graphName);
+    for (auto& v : vertexes)
+    {
+      g.addVertex(v);
+    }
+  }
+
+  void cmdMerge(std::istream& in, std::ostream& out, GraphTable& graphs)
+  {
+    std::string newName, old1, old2;
+    if (!(in >> newName >> old1 >> old2))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    if (!graphs.has(old1) || !graphs.has(old2) || graphs.has(newName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    Graph merged;
+    auto copyEdges = [&](const Graph& src)
+    {
+      for (auto it = src.outgoing().begin(); it != src.outgoing().end(); ++it)
+      {
+        const std::string& from = it->first;
+        merged.addVertex(from);
+        const AdjTable& adj = it->second;
+        for (auto jt = adj.begin(); jt != adj.end(); ++jt)
+        {
+          for (auto wt = jt->second.begin(); wt != jt->second.end(); ++wt)
+          {
+            merged.addEdge(from, jt->first, *wt);
+          }
+        }
+      }
+    };
+    copyEdges(graphs.at(old1));
+    copyEdges(graphs.at(old2));
+    ensureGraphSlot(graphs);
+    graphs.add(newName, merged);
+  }
+
+  void cmdExtract(std::istream& in, std::ostream& out, GraphTable& graphs)
+  {
+    std::string newName, oldName;
+    std::size_t k = 0;
+    if (!(in >> newName >> oldName >> k))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    if (!graphs.has(oldName) || graphs.has(newName))
+    {
+      out << INVALID << '\n';
+      return;
+    }
+    std::vector< std::string > vertexes;
+    for (std::size_t i = 0; i < k; ++i)
+    {
+      std::string v;
+      if (!(in >> v))
+      {
+        out << INVALID << '\n';
+        return;
+      }
+      vertexes.push_back(v);
+    }
+    const Graph& src = graphs.at(oldName);
+    for (auto& v : vertexes)
+    {
+      if (!src.hasVertex(v))
+      {
+        out << INVALID << '\n';
+        return;
+      }
+    }
+    HashTable< std::string, bool, XxHash32 > selected(64);
+    for (auto& v : vertexes)
+    {
+      if (!selected.has(v))
+      {
+        if (selected.size() >= selected.slots())
+        {
+          selected.rehash(selected.slots() * 2 + 1);
+        }
+        selected.add(v, true);
+      }
+    }
+    Graph sub;
+    for (auto& v : vertexes)
+    {
+      sub.addVertex(v);
+    }
+    for (auto it = src.outgoing().begin(); it != src.outgoing().end(); ++it)
+    {
+      const std::string& from = it->first;
+      if (!selected.has(from))
+      {
+        continue;
+      }
+      const AdjTable& adj = it->second;
+      for (auto jt = adj.begin(); jt != adj.end(); ++jt)
+      {
+        if (!selected.has(jt->first))
+        {
+          continue;
+        }
+        for (auto wt = jt->second.begin(); wt != jt->second.end(); ++wt)
+        {
+          sub.addEdge(from, jt->first, *wt);
+        }
+      }
+    }
+    ensureGraphSlot(graphs);
+    graphs.add(newName, sub);
   }
 
   void executeCommand(const std::string& line, GraphTable& graphs, std::ostream& out)
   {
+    static HashTable< std::string, CmdFunc, XxHash32 > cmdTable(16);
+    static bool initialized = false;
+    if (!initialized)
+    {
+      cmdTable.add("graphs",   cmdGraphs);
+      cmdTable.add("vertexes", cmdVertexes);
+      cmdTable.add("outbound", cmdOutbound);
+      cmdTable.add("inbound",  cmdInbound);
+      cmdTable.add("bind",     cmdBind);
+      cmdTable.add("cut",      cmdCut);
+      cmdTable.add("create",   cmdCreate);
+      cmdTable.add("merge",    cmdMerge);
+      cmdTable.add("extract",  cmdExtract);
+      initialized = true;
+    }
     std::istringstream ss(line);
     std::string cmd;
     if (!(ss >> cmd))
     {
       return;
     }
-
-    if (cmd == "graphs")
+    try
     {
-      cmdGraphs(graphs, out);
-    }
-    else if (cmd == "vertexes")
-    {
-      std::string graphName;
-      if (!(ss >> graphName))
+      cmdTable.at(cmd)(ss, out, graphs);
+      if (ss.fail())
       {
         out << INVALID << '\n';
-        return;
       }
-      cmdVertexes(graphName, graphs, out);
     }
-    else if (cmd == "outbound")
-    {
-      std::string graphName, vertex;
-      if (!(ss >> graphName >> vertex))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      cmdOutbound(graphName, vertex, graphs, out);
-    }
-    else if (cmd == "inbound")
-    {
-      std::string graphName, vertex;
-      if (!(ss >> graphName >> vertex))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      cmdInbound(graphName, vertex, graphs, out);
-    }
-    else if (cmd == "bind")
-    {
-      std::string graphName, va, vb;
-      unsigned int weight = 0;
-      if (!(ss >> graphName >> va >> vb >> weight))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      cmdBind(graphName, va, vb, weight, graphs, out);
-    }
-    else if (cmd == "cut")
-    {
-      std::string graphName, va, vb;
-      unsigned int weight = 0;
-      if (!(ss >> graphName >> va >> vb >> weight))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      cmdCut(graphName, va, vb, weight, graphs, out);
-    }
-    else if (cmd == "create")
-    {
-      std::string graphName;
-      if (!(ss >> graphName))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      std::size_t k = 0;
-      ss >> k;  // optional; if absent k stays 0
-      std::vector< std::string > vertexes;
-      for (std::size_t i = 0; i < k; ++i)
-      {
-        std::string v;
-        if (!(ss >> v))
-        {
-          out << INVALID << '\n';
-          return;
-        }
-        vertexes.push_back(v);
-      }
-      cmdCreate(graphName, vertexes, graphs, out);
-    }
-    else if (cmd == "merge")
-    {
-      std::string newName, old1, old2;
-      if (!(ss >> newName >> old1 >> old2))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      cmdMerge(newName, old1, old2, graphs, out);
-    }
-    else if (cmd == "extract")
-    {
-      std::string newName, oldName;
-      std::size_t k = 0;
-      if (!(ss >> newName >> oldName >> k))
-      {
-        out << INVALID << '\n';
-        return;
-      }
-      std::vector< std::string > vertexes;
-      for (std::size_t i = 0; i < k; ++i)
-      {
-        std::string v;
-        if (!(ss >> v))
-        {
-          out << INVALID << '\n';
-          return;
-        }
-        vertexes.push_back(v);
-      }
-      cmdExtract(newName, oldName, vertexes, graphs, out);
-    }
-    else
+    catch (const std::out_of_range&)
     {
       out << INVALID << '\n';
     }
