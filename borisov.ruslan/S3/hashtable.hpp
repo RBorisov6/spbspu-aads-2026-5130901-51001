@@ -283,7 +283,7 @@ namespace borisov
     {
       if (!buckets_[i].empty())
       {
-        return const_iterator(this, i, buckets_[i].begin());
+        return const_iterator(this, i, buckets_[i].cbegin());
       }
     }
     return end();
@@ -435,12 +435,12 @@ namespace borisov
 
     void advance()
     {
-      while (bucketIdx_ < table_->slots_ && it_ == table_->buckets_[bucketIdx_].end())
+      while (bucketIdx_ < table_->slots_ && it_ == table_->buckets_[bucketIdx_].cend())
       {
         ++bucketIdx_;
         if (bucketIdx_ < table_->slots_)
         {
-          it_ = table_->buckets_[bucketIdx_].begin();
+          it_ = table_->buckets_[bucketIdx_].cbegin();
         }
         else
         {

@@ -120,3 +120,51 @@ BOOST_AUTO_TEST_CASE(hashtable_multiple_in_same_bucket)
   BOOST_CHECK(t.has("aaa"));
   BOOST_CHECK(t.has("bbb"));
 }
+
+BOOST_AUTO_TEST_CASE(hashtable_iterator_visits_all_elements)
+{
+  HT t(8);
+  t.add("one", 1);
+  t.add("two", 2);
+  t.add("three", 3);
+  int sum = 0;
+  for (auto it = t.begin(); it != t.end(); ++it)
+  {
+    sum += it->second;
+  }
+  BOOST_CHECK_EQUAL(sum, 6);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_iterator_empty_table)
+{
+  HT t(8);
+  BOOST_CHECK(t.begin() == t.end());
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_const_iterator_visits_all_elements)
+{
+  HT t(8);
+  t.add("a", 10);
+  t.add("b", 20);
+  const HT& ct = t;
+  int sum = 0;
+  for (auto it = ct.begin(); it != ct.end(); ++it)
+  {
+    sum += it->second;
+  }
+  BOOST_CHECK_EQUAL(sum, 30);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_iterator_count_matches_size)
+{
+  HT t(16);
+  t.add("x", 1);
+  t.add("y", 2);
+  t.add("z", 3);
+  std::size_t count = 0;
+  for (auto it = t.begin(); it != t.end(); ++it)
+  {
+    ++count;
+  }
+  BOOST_CHECK_EQUAL(count, t.size());
+}
