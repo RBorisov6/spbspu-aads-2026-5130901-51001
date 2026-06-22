@@ -16,8 +16,7 @@ BOOST_AUTO_TEST_CASE(io_read_single_graph)
   BOOST_CHECK(g.hasVertex("a"));
   BOOST_CHECK(g.hasVertex("b"));
   BOOST_CHECK(g.hasVertex("c"));
-  auto key = std::make_pair(std::string("a"), std::string("b"));
-  BOOST_CHECK(g.edges().has(key));
+  BOOST_CHECK(!g.getOutbound("a").empty());
 }
 
 BOOST_AUTO_TEST_CASE(io_read_multiple_graphs)
@@ -62,6 +61,5 @@ BOOST_AUTO_TEST_CASE(io_self_loop_edge)
   borisov::GraphTable graphs(16);
   BOOST_CHECK(borisov::readGraphs(in, graphs));
   auto& g = graphs.at("g");
-  auto key = std::make_pair(std::string("b"), std::string("b"));
-  BOOST_CHECK(g.edges().has(key));
+  BOOST_CHECK(!g.getOutbound("b").empty());
 }
