@@ -9,11 +9,19 @@
 
 namespace borisov
 {
+  template< class Key, class Value, class Hash, class Equal >
+  class HTIter;
+
+  template< class Key, class Value, class Hash, class Equal >
+  class HTCIter;
+
   template< class Key, class Value, class Hash = std::hash< Key >, class Equal = std::equal_to< Key > >
   class HashTable
   {
   public:
     using Bucket = List< std::pair< Key, Value > >;
+    using iterator = HTIter< Key, Value, Hash, Equal >;
+    using const_iterator = HTCIter< Key, Value, Hash, Equal >;
 
     explicit HashTable(std::size_t slots = 11);
     HashTable(const HashTable& other);
@@ -45,6 +53,16 @@ namespace borisov
 
     Bucket& bucket(std::size_t idx) { return buckets_[idx]; }
     const Bucket& bucket(std::size_t idx) const { return buckets_[idx]; }
+
+    iterator begin();
+    iterator end();
+    const_iterator begin() const;
+    const_iterator end() const;
+    const_iterator cbegin() const;
+    const_iterator cend() const;
+
+    friend class HTIter< Key, Value, Hash, Equal >;
+    friend class HTCIter< Key, Value, Hash, Equal >;
 
   private:
     std::size_t slots_;
@@ -233,6 +251,204 @@ namespace borisov
     }
     size_ = 0;
   }
+
+  // ---- Iterator implementations ----
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::iterator
+  HashTable< Key, Value, Hash, Equal >::begin()
+  {
+    for (std::size_t i = 0; i < slots_; ++i)
+    {
+      if (!buckets_[i].empty())
+      {
+        return iterator(this, i, buckets_[i].begin());
+      }
+    }
+    return end();
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::iterator
+  HashTable< Key, Value, Hash, Equal >::end()
+  {
+    return iterator(this, slots_, typename Bucket::iterator());
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::const_iterator
+  HashTable< Key, Value, Hash, Equal >::begin() const
+  {
+    for (std::size_t i = 0; i < slots_; ++i)
+    {
+      if (!buckets_[i].empty())
+      {
+        return const_iterator(this, i, buckets_[i].begin());
+      }
+    }
+    return end();
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::const_iterator
+  HashTable< Key, Value, Hash, Equal >::end() const
+  {
+    return const_iterator(this, slots_, typename Bucket::const_iterator());
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::const_iterator
+  HashTable< Key, Value, Hash, Equal >::cbegin() const
+  {
+    return begin();
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::const_iterator
+  HashTable< Key, Value, Hash, Equal >::cend() const
+  {
+    return end();
+  }
+
+  // ---- HTIter ----
+
+  template< class Key, class Value, class Hash, class Equal >
+  class HTIter
+  {
+  public:
+    using HT = HashTable< Key, Value, Hash, Equal >;
+    using BucketIter = typename HT::Bucket::iterator;
+    using value_type = std::pair< Key, Value >;
+
+    HTIter():
+      table_(nullptr),
+      bucketIdx_(0),
+      it_()
+    {}
+
+    value_type& operator*() const { return *it_; }
+    value_type* operator->() const { return &(*it_); }
+
+    HTIter& operator++()
+    {
+      ++it_;
+      advance();
+      return *this;
+    }
+
+    HTIter operator++(int)
+    {
+      HTIter old(*this);
+      ++(*this);
+      return old;
+    }
+
+    bool operator==(const HTIter& o) const
+    {
+      return table_ == o.table_ && bucketIdx_ == o.bucketIdx_ && it_ == o.it_;
+    }
+
+    bool operator!=(const HTIter& o) const { return !(*this == o); }
+
+  private:
+    friend class HashTable< Key, Value, Hash, Equal >;
+
+    HT* table_;
+    std::size_t bucketIdx_;
+    BucketIter it_;
+
+    HTIter(HT* t, std::size_t idx, BucketIter it):
+      table_(t),
+      bucketIdx_(idx),
+      it_(it)
+    {}
+
+    void advance()
+    {
+      while (bucketIdx_ < table_->slots_ && it_ == table_->buckets_[bucketIdx_].end())
+      {
+        ++bucketIdx_;
+        if (bucketIdx_ < table_->slots_)
+        {
+          it_ = table_->buckets_[bucketIdx_].begin();
+        }
+        else
+        {
+          it_ = BucketIter();
+        }
+      }
+    }
+  };
+
+  // ---- HTCIter ----
+
+  template< class Key, class Value, class Hash, class Equal >
+  class HTCIter
+  {
+  public:
+    using HT = HashTable< Key, Value, Hash, Equal >;
+    using BucketCIter = typename HT::Bucket::const_iterator;
+    using value_type = std::pair< Key, Value >;
+
+    HTCIter():
+      table_(nullptr),
+      bucketIdx_(0),
+      it_()
+    {}
+
+    const value_type& operator*() const { return *it_; }
+    const value_type* operator->() const { return &(*it_); }
+
+    HTCIter& operator++()
+    {
+      ++it_;
+      advance();
+      return *this;
+    }
+
+    HTCIter operator++(int)
+    {
+      HTCIter old(*this);
+      ++(*this);
+      return old;
+    }
+
+    bool operator==(const HTCIter& o) const
+    {
+      return table_ == o.table_ && bucketIdx_ == o.bucketIdx_ && it_ == o.it_;
+    }
+
+    bool operator!=(const HTCIter& o) const { return !(*this == o); }
+
+  private:
+    friend class HashTable< Key, Value, Hash, Equal >;
+
+    const HT* table_;
+    std::size_t bucketIdx_;
+    BucketCIter it_;
+
+    HTCIter(const HT* t, std::size_t idx, BucketCIter it):
+      table_(t),
+      bucketIdx_(idx),
+      it_(it)
+    {}
+
+    void advance()
+    {
+      while (bucketIdx_ < table_->slots_ && it_ == table_->buckets_[bucketIdx_].end())
+      {
+        ++bucketIdx_;
+        if (bucketIdx_ < table_->slots_)
+        {
+          it_ = table_->buckets_[bucketIdx_].begin();
+        }
+        else
+        {
+          it_ = BucketCIter();
+        }
+      }
+    }
+  };
 }
 
 #endif
