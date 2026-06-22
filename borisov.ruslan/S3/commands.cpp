@@ -32,6 +32,11 @@ namespace borisov
         {
           return a.first < b.first || (a.first == b.first && a.second < b.second);
         });
+      if (v.empty())
+      {
+        out << '\n';
+        return;
+      }
       std::size_t i = 0;
       while (i < v.size())
       {
@@ -55,6 +60,11 @@ namespace borisov
       names.push_back(it->first);
     }
     std::sort(names.begin(), names.end());
+    if (names.empty())
+    {
+      out << '\n';
+      return;
+    }
     for (auto& n : names)
     {
       out << n << '\n';
@@ -76,6 +86,11 @@ namespace borisov
       v.push_back(*it);
     }
     std::sort(v.begin(), v.end());
+    if (v.empty())
+    {
+      out << '\n';
+      return;
+    }
     for (auto& s : v)
     {
       out << s << '\n';
@@ -327,10 +342,6 @@ namespace borisov
     try
     {
       cmdTable.at(cmd)(ss, out, graphs);
-      if (ss.fail())
-      {
-        out << INVALID << '\n';
-      }
     }
     catch (const std::out_of_range&)
     {
