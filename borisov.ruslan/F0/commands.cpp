@@ -70,6 +70,66 @@ namespace borisov
       out << "<CORPUS '" << name << "' CREATED: " << count << " documents>\n";
     }
 
+    void cmdSetK(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      int k = 0;
+      if (!(in >> name >> k))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      if (k < 2)
+      {
+        out << "<INVALID K (k < 2)>\n";
+        return;
+      }
+      if (static_cast< std::size_t >(k) > corpus->docs_.size())
+      {
+        out << "<INVALID K (k > document count)>\n";
+        return;
+      }
+      corpus->k_ = k;
+      corpus->centroids_.clear();
+      for (auto dit = corpus->docs_.begin(); dit != corpus->docs_.end(); ++dit)
+      {
+        dit->cluster_ = -1;
+      }
+      out << "<K SET TO " << k << " for '" << name << "'>\n";
+    }
+
+    void cmdCluster(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      int maxIter = 0;
+      if (!(in >> name >> maxIter))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      if (!corpus->tfidf_built_)
+      {
+        out << "<TF-IDF NOT BUILT. Run build-tfidf first.>\n";
+        return;
+      }
+      if (static_cast< std::size_t >(corpus->k_) > corpus->docs_.size())
+      {
+        out << "<INVALID K (k > document count)>\n";
+        return;
+      }
+      runKmeans(*corpus, maxIter, out);
+    }
+
     void cmdBuildTfidf(std::istream& in, std::ostream& out, CorpusTable& table)
     {
       std::string name;
@@ -206,6 +266,8 @@ namespace borisov
       { "load-corpus",      cmdLoadCorpus },
       { "add-document",     cmdAddDocument },
       { "remove-stopwords", cmdRemoveStopwords },
+      { "set-k",            cmdSetK },
+      { "cluster",          cmdCluster },
       { "build-tfidf",      cmdBuildTfidf },
       { "list-corpuses",    cmdListCorpuses },
       { "delete-corpus",    cmdDeleteCorpus },
