@@ -227,3 +227,51 @@ BOOST_AUTO_TEST_CASE(bst_rotate_large_right)
   BOOST_CHECK(t.has(2));
   BOOST_CHECK(t.has(3));
 }
+
+BOOST_AUTO_TEST_CASE(bst_height_empty)
+{
+  borisov::BSTree< int, std::string > t;
+  BOOST_CHECK_EQUAL(t.height(), 0u);
+}
+
+BOOST_AUTO_TEST_CASE(bst_height_single)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(1, "a");
+  BOOST_CHECK_EQUAL(t.height(), 1u);
+}
+
+BOOST_AUTO_TEST_CASE(bst_height_balanced)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(2, "b");
+  t.push(1, "a");
+  t.push(3, "c");
+  BOOST_CHECK_EQUAL(t.height(), 2u);
+}
+
+BOOST_AUTO_TEST_CASE(bst_height_degenerate)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(1, "a");
+  t.push(2, "b");
+  t.push(3, "c");
+  BOOST_CHECK_EQUAL(t.height(), 3u);
+}
+
+BOOST_AUTO_TEST_CASE(bst_height_subtree)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(2, "b");
+  t.push(1, "a");
+  t.push(3, "c");
+  auto it = t.find(3);
+  BOOST_CHECK_EQUAL(t.height(it), 1u);
+}
+
+BOOST_AUTO_TEST_CASE(bst_height_end_is_zero)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(1, "a");
+  BOOST_CHECK_EQUAL(t.height(t.cend()), 0u);
+}
