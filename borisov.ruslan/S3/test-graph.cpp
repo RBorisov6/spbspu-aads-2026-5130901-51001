@@ -26,14 +26,24 @@ BOOST_AUTO_TEST_CASE(graph_add_edge_registers_vertices)
   BOOST_CHECK(g.hasVertex("y"));
 }
 
-BOOST_AUTO_TEST_CASE(graph_add_edge_stored_in_edges)
+BOOST_AUTO_TEST_CASE(graph_get_outbound)
 {
   borisov::Graph g;
   g.addEdge("a", "b", 10);
-  auto key = std::make_pair(std::string("a"), std::string("b"));
-  BOOST_CHECK(g.edges().has(key));
-  const auto& ws = g.edges().at(key);
-  BOOST_CHECK_EQUAL(ws.front(), 10u);
+  auto edges = g.getOutbound("a");
+  BOOST_CHECK_EQUAL(edges.size(), 1u);
+  BOOST_CHECK_EQUAL(edges.front().first, "b");
+  BOOST_CHECK_EQUAL(edges.front().second, 10u);
+}
+
+BOOST_AUTO_TEST_CASE(graph_get_inbound)
+{
+  borisov::Graph g;
+  g.addEdge("a", "b", 10);
+  auto edges = g.getInbound("b");
+  BOOST_CHECK_EQUAL(edges.size(), 1u);
+  BOOST_CHECK_EQUAL(edges.front().first, "a");
+  BOOST_CHECK_EQUAL(edges.front().second, 10u);
 }
 
 BOOST_AUTO_TEST_CASE(graph_multiple_weights_same_edge)
@@ -41,9 +51,8 @@ BOOST_AUTO_TEST_CASE(graph_multiple_weights_same_edge)
   borisov::Graph g;
   g.addEdge("a", "b", 1);
   g.addEdge("a", "b", 2);
-  auto key = std::make_pair(std::string("a"), std::string("b"));
-  const auto& ws = g.edges().at(key);
-  BOOST_CHECK_EQUAL(ws.size(), 2u);
+  auto edges = g.getOutbound("a");
+  BOOST_CHECK_EQUAL(edges.size(), 2u);
 }
 
 BOOST_AUTO_TEST_CASE(graph_remove_edge_ok)
@@ -51,8 +60,8 @@ BOOST_AUTO_TEST_CASE(graph_remove_edge_ok)
   borisov::Graph g;
   g.addEdge("a", "b", 5);
   g.removeEdge("a", "b", 5);
-  auto key = std::make_pair(std::string("a"), std::string("b"));
-  BOOST_CHECK(!g.edges().has(key));
+  auto edges = g.getOutbound("a");
+  BOOST_CHECK(edges.empty());
 }
 
 BOOST_AUTO_TEST_CASE(graph_remove_one_weight_from_multi)
@@ -61,10 +70,9 @@ BOOST_AUTO_TEST_CASE(graph_remove_one_weight_from_multi)
   g.addEdge("a", "b", 3);
   g.addEdge("a", "b", 7);
   g.removeEdge("a", "b", 3);
-  auto key = std::make_pair(std::string("a"), std::string("b"));
-  const auto& ws = g.edges().at(key);
-  BOOST_CHECK_EQUAL(ws.size(), 1u);
-  BOOST_CHECK_EQUAL(ws.front(), 7u);
+  auto edges = g.getOutbound("a");
+  BOOST_CHECK_EQUAL(edges.size(), 1u);
+  BOOST_CHECK_EQUAL(edges.front().second, 7u);
 }
 
 BOOST_AUTO_TEST_CASE(graph_remove_nonexistent_edge_throws)
@@ -84,6 +92,38 @@ BOOST_AUTO_TEST_CASE(graph_self_loop)
 {
   borisov::Graph g;
   g.addEdge("a", "a", 0);
-  auto key = std::make_pair(std::string("a"), std::string("a"));
-  BOOST_CHECK(g.edges().has(key));
+  auto edges = g.getOutbound("a");
+  BOOST_CHECK_EQUAL(edges.size(), 1u);
+  BOOST_CHECK_EQUAL(edges.front().first, "a");
+}
+
+BOOST_AUTO_TEST_CASE(graph_get_vertexes_count)
+{
+  borisov::Graph g;
+  g.addEdge("a", "b", 1);
+  g.addVertex("c");
+  auto verts = g.getVertexes();
+  BOOST_CHECK_EQUAL(verts.size(), 3u);
+}
+
+BOOST_AUTO_TEST_CASE(graph_outbound_invalid_vertex_throws)
+{
+  borisov::Graph g;
+  BOOST_CHECK_THROW(g.getOutbound("z"), std::out_of_range);
+}
+
+BOOST_AUTO_TEST_CASE(graph_inbound_invalid_vertex_throws)
+{
+  borisov::Graph g;
+  BOOST_CHECK_THROW(g.getInbound("z"), std::out_of_range);
+}
+
+BOOST_AUTO_TEST_CASE(graph_inbound_symmetric_to_outbound)
+{
+  borisov::Graph g;
+  g.addEdge("x", "y", 42);
+  auto out = g.getOutbound("x");
+  auto in  = g.getInbound("y");
+  BOOST_CHECK_EQUAL(out.size(), in.size());
+  BOOST_CHECK_EQUAL(out.front().second, in.front().second);
 }
