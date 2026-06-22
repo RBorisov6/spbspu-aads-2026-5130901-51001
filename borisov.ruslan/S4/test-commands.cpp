@@ -112,10 +112,12 @@ BOOST_AUTO_TEST_CASE(cmd_unknown)
   BOOST_CHECK_EQUAL(out.str(), "<INVALID COMMAND>\n");
 }
 
-BOOST_AUTO_TEST_CASE(cmd_complement_result_already_exists)
+BOOST_AUTO_TEST_CASE(cmd_complement_overwrites_existing)
 {
   borisov::DataTable t = makeTable();
   std::ostringstream out;
   borisov::executeCommand("complement first second first", t, out);
-  BOOST_CHECK_EQUAL(out.str(), "<INVALID COMMAND>\n");
+  BOOST_CHECK_EQUAL(out.str(), "");
+  borisov::executeCommand("print first", t, out);
+  BOOST_CHECK_EQUAL(out.str(), "first 4 mouse\n");
 }
