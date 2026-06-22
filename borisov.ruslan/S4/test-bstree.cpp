@@ -158,3 +158,72 @@ BOOST_AUTO_TEST_CASE(bst_find_missing_returns_end)
   borisov::BSTree< int, std::string > t;
   BOOST_CHECK(t.find(99) == t.end());
 }
+
+BOOST_AUTO_TEST_CASE(bst_rotate_left)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(1, "a");
+  t.push(2, "b");
+  auto it = t.find(2);
+  t.rotateLeft(it);
+  BOOST_CHECK_EQUAL(t.size(), 2u);
+  BOOST_CHECK(t.has(1));
+  BOOST_CHECK(t.has(2));
+  int prev = -1;
+  for (auto jt = t.cbegin(); jt != t.cend(); ++jt)
+  {
+    BOOST_CHECK(jt->first > prev);
+    prev = jt->first;
+  }
+}
+
+BOOST_AUTO_TEST_CASE(bst_rotate_right)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(2, "b");
+  t.push(1, "a");
+  auto it = t.find(1);
+  t.rotateRight(it);
+  BOOST_CHECK_EQUAL(t.size(), 2u);
+  BOOST_CHECK(t.has(1));
+  BOOST_CHECK(t.has(2));
+}
+
+BOOST_AUTO_TEST_CASE(bst_rotate_reference_stability)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(1, "a");
+  t.push(2, "b");
+  auto it = t.find(2);
+  t.rotateLeft(it);
+  BOOST_CHECK_EQUAL(it->first, 2);
+  BOOST_CHECK_EQUAL(it->second, "b");
+}
+
+BOOST_AUTO_TEST_CASE(bst_rotate_large_left)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(1, "a");
+  t.push(3, "c");
+  t.push(2, "b");
+  auto it = t.find(2);
+  t.rotateLargeLeft(it);
+  BOOST_CHECK_EQUAL(t.size(), 3u);
+  BOOST_CHECK(t.has(1));
+  BOOST_CHECK(t.has(2));
+  BOOST_CHECK(t.has(3));
+}
+
+BOOST_AUTO_TEST_CASE(bst_rotate_large_right)
+{
+  borisov::BSTree< int, std::string > t;
+  t.push(3, "c");
+  t.push(1, "a");
+  t.push(2, "b");
+  auto it = t.find(2);
+  t.rotateLargeRight(it);
+  BOOST_CHECK_EQUAL(t.size(), 3u);
+  BOOST_CHECK(t.has(1));
+  BOOST_CHECK(t.has(2));
+  BOOST_CHECK(t.has(3));
+}
