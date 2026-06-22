@@ -22,6 +22,17 @@ namespace borisov
       return path.substr(pos + 1);
     }
 
+    bool getCorpus(CorpusTable& table, const std::string& name, std::ostream& out, Corpus*& ptr)
+    {
+      if (!table.has(name))
+      {
+        out << "<CORPUS NOT FOUND>\n";
+        return false;
+      }
+      ptr = &table.at(name);
+      return true;
+    }
+
     void cmdLoadCorpus(std::istream& in, std::ostream& out, CorpusTable& table)
     {
       std::string name;
@@ -57,6 +68,72 @@ namespace borisov
         ++count;
       }
       out << "<CORPUS '" << name << "' CREATED: " << count << " documents>\n";
+    }
+
+    void cmdAddDocument(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      std::string filename;
+      if (!(in >> name >> filename))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      std::string docName = baseName(filename);
+      Document doc(docName);
+      doc.words_ = loadWords(filename);
+      corpus->docs_.pushBack(doc);
+      corpus->tfidf_built_ = false;
+      out << "<ADDED '" << docName << "' to '" << name << "'>\n";
+    }
+
+    void cmdRemoveStopwords(std::istream& in, std::ostream& out, CorpusTable& table)
+    {
+      std::string name;
+      std::string swFile;
+      if (!(in >> name >> swFile))
+      {
+        out << "<INVALID COMMAND>\n";
+        return;
+      }
+      Corpus* corpus = nullptr;
+      if (!getCorpus(table, name, out, corpus))
+      {
+        return;
+      }
+      List< std::string > sw = loadStopwords(swFile);
+      if (!sw.empty())
+      {
+        HashTable< std::string, int, XxHash32, std::equal_to< std::string > > swSet(
+          static_cast< std::size_t >(sw.size() * 2 + 1)
+        );
+        for (auto it = sw.begin(); it != sw.end(); ++it)
+        {
+          if (!swSet.has(*it))
+          {
+            swSet.add(*it, 1);
+          }
+        }
+        for (auto dit = corpus->docs_.begin(); dit != corpus->docs_.end(); ++dit)
+        {
+          List< std::string > filtered;
+          for (auto wit = dit->words_.begin(); wit != dit->words_.end(); ++wit)
+          {
+            if (!swSet.has(*wit))
+            {
+              filtered.pushBack(*wit);
+            }
+          }
+          dit->words_ = filtered;
+        }
+        corpus->tfidf_built_ = false;
+      }
+      out << "<STOPWORDS REMOVED from '" << name << "'. Run build-tfidf to update.>\n";
     }
 
     void cmdListCorpuses(std::istream&, std::ostream& out, CorpusTable& table)
@@ -105,9 +182,11 @@ namespace borisov
     };
 
     const CmdEntry CMD_TABLE[] = {
-      { "load-corpus",   cmdLoadCorpus },
-      { "list-corpuses", cmdListCorpuses },
-      { "delete-corpus", cmdDeleteCorpus },
+      { "load-corpus",      cmdLoadCorpus },
+      { "add-document",     cmdAddDocument },
+      { "remove-stopwords", cmdRemoveStopwords },
+      { "list-corpuses",    cmdListCorpuses },
+      { "delete-corpus",    cmdDeleteCorpus },
     };
     const std::size_t CMD_COUNT = sizeof(CMD_TABLE) / sizeof(CMD_TABLE[0]);
   }
