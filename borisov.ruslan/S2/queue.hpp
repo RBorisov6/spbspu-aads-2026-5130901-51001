@@ -3,6 +3,7 @@
 
 #include "../common/list.hpp"
 #include <stdexcept>
+#include <utility>
 
 namespace borisov
 {
@@ -18,6 +19,10 @@ namespace borisov
     Queue& operator=(Queue&& other) noexcept;
 
     void push(const T& value);
+
+    template< class... Args >
+    void emplace(Args&&... args);
+
     T& front();
     const T& front() const;
     T& back();
@@ -64,7 +69,14 @@ namespace borisov
   template < typename T >
   void Queue< T >::push(const T& value)
   {
-    list_.pushBack(value);
+    list_.emplaceBack(value);
+  }
+
+  template < typename T >
+  template< class... Args >
+  void Queue< T >::emplace(Args&&... args)
+  {
+    list_.emplaceBack(std::forward< Args >(args)...);
   }
 
   template < typename T >

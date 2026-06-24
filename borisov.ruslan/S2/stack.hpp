@@ -3,6 +3,7 @@
 
 #include "../common/list.hpp"
 #include <stdexcept>
+#include <utility>
 
 namespace borisov
 {
@@ -18,6 +19,10 @@ namespace borisov
     Stack& operator=(Stack&& other) noexcept;
 
     void push(const T& value);
+
+    template< class... Args >
+    void emplace(Args&&... args);
+
     T& top();
     const T& top() const;
     void pop();
@@ -62,7 +67,14 @@ namespace borisov
   template < typename T >
   void Stack< T >::push(const T& value)
   {
-    list_.pushFront(value);
+    list_.emplaceFront(value);
+  }
+
+  template < typename T >
+  template< class... Args >
+  void Stack< T >::emplace(Args&&... args)
+  {
+    list_.emplaceFront(std::forward< Args >(args)...);
   }
 
   template < typename T >

@@ -50,6 +50,15 @@ namespace borisov
     iterator insert(iterator pos, const T& value);
     iterator erase(iterator pos);
 
+    template< class... Args >
+    iterator emplaceFront(Args&&... args);
+
+    template< class... Args >
+    iterator emplaceBack(Args&&... args);
+
+    template< class... Args >
+    iterator emplace(iterator pos, Args&&... args);
+
     void swap(List& other) noexcept;
 
   private:
@@ -59,8 +68,9 @@ namespace borisov
       Node* prev_;
       Node* next_;
 
-      explicit Node(const T& val):
-        data_(val),
+      template< class... Args >
+      explicit Node(Args&&... args):
+        data_(std::forward< Args >(args)...),
         prev_(nullptr),
         next_(nullptr)
       {}
@@ -195,10 +205,11 @@ namespace borisov
     return *this;
   }
 
-  template <class T>
-  void List<T>::pushFront(const T& value)
+  template< class T >
+  template< class... Args >
+  typename List< T >::iterator List< T >::emplaceFront(Args&&... args)
   {
-    Node* node = new Node(value);
+    Node* const node = new Node(std::forward< Args >(args)...);
     if (empty())
     {
       head_ = tail_ = node;
@@ -210,12 +221,14 @@ namespace borisov
       head_ = node;
     }
     ++size_;
+    return iterator(head_);
   }
 
-  template <class T>
-  void List<T>::pushBack(const T& value)
+  template< class T >
+  template< class... Args >
+  typename List< T >::iterator List< T >::emplaceBack(Args&&... args)
   {
-    Node* node = new Node(value);
+    Node* const node = new Node(std::forward< Args >(args)...);
     if (empty())
     {
       head_ = tail_ = node;
@@ -227,6 +240,42 @@ namespace borisov
       tail_ = node;
     }
     ++size_;
+    return iterator(tail_);
+  }
+
+  template< class T >
+  template< class... Args >
+  typename List< T >::iterator List< T >::emplace(iterator pos, Args&&... args)
+  {
+    if (pos == begin())
+    {
+      return emplaceFront(std::forward< Args >(args)...);
+    }
+    if (pos == end())
+    {
+      return emplaceBack(std::forward< Args >(args)...);
+    }
+    Node* const curr = pos.node_;
+    Node* const prev = curr->prev_;
+    Node* const node = new Node(std::forward< Args >(args)...);
+    node->prev_ = prev;
+    node->next_ = curr;
+    prev->next_ = node;
+    curr->prev_ = node;
+    ++size_;
+    return iterator(node);
+  }
+
+  template <class T>
+  void List<T>::pushFront(const T& value)
+  {
+    emplaceFront(value);
+  }
+
+  template <class T>
+  void List<T>::pushBack(const T& value)
+  {
+    emplaceBack(value);
   }
 
   template <class T>
@@ -371,27 +420,7 @@ namespace borisov
   template <class T>
   typename List<T>::iterator List<T>::insert(iterator pos, const T& value)
   {
-    if (pos == begin())
-    {
-      pushFront(value);
-      return begin();
-    }
-    if (pos == end())
-    {
-      pushBack(value);
-      iterator it = end();
-      --it;
-      return it;
-    }
-    Node* curr = pos.node_;
-    Node* prev = curr->prev_;
-    Node* node = new Node(value);
-    node->prev_ = prev;
-    node->next_ = curr;
-    prev->next_ = node;
-    curr->prev_ = node;
-    ++size_;
-    return iterator(node);
+    return emplace(pos, value);
   }
 
   template <class T>
