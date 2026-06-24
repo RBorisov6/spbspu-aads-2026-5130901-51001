@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(hashtable_drop_returns_value_and_removes)
 {
   HT t(8);
   t.add("x", 7);
-  int v = t.drop("x");
+  const int v = t.drop("x");
   BOOST_CHECK_EQUAL(v, 7);
   BOOST_CHECK(!t.has("x"));
   BOOST_CHECK_EQUAL(t.size(), 0u);
@@ -57,14 +57,6 @@ BOOST_AUTO_TEST_CASE(hashtable_drop_throws_for_missing_key)
 {
   HT t(8);
   BOOST_CHECK_THROW(t.drop("ghost"), std::out_of_range);
-}
-
-BOOST_AUTO_TEST_CASE(hashtable_overflow_throws_when_full)
-{
-  HT t(2);
-  t.add("a", 1);
-  t.add("b", 2);
-  BOOST_CHECK_THROW(t.add("c", 3), std::overflow_error);
 }
 
 BOOST_AUTO_TEST_CASE(hashtable_rehash_allows_more_inserts)
@@ -108,15 +100,14 @@ BOOST_AUTO_TEST_CASE(hashtable_move_constructor)
   BOOST_CHECK(t1.empty());
 }
 
-BOOST_AUTO_TEST_CASE(hashtable_multiple_in_same_bucket)
+BOOST_AUTO_TEST_CASE(hashtable_chains_grow_without_limit)
 {
   HT t(1);
   t.add("aaa", 1);
-  BOOST_CHECK_THROW(t.add("bbb", 2), std::overflow_error);
-  t.rehash(4);
   t.add("bbb", 2);
   BOOST_CHECK(t.has("aaa"));
   BOOST_CHECK(t.has("bbb"));
+  BOOST_CHECK_EQUAL(t.size(), 2u);
 }
 
 BOOST_AUTO_TEST_CASE(hashtable_iterator_visits_all_elements)
@@ -165,4 +156,105 @@ BOOST_AUTO_TEST_CASE(hashtable_iterator_count_matches_size)
     ++count;
   }
   BOOST_CHECK_EQUAL(count, t.size());
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_load_factor_empty)
+{
+  HT t(8);
+  BOOST_CHECK_SMALL(t.loadFactor(), 1e-9);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_load_factor_after_inserts)
+{
+  HT t(8);
+  t.add("a", 1);
+  t.add("b", 2);
+  BOOST_CHECK_CLOSE(t.loadFactor(), 2.0 / 8.0, 1e-6);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_longest_chain_empty)
+{
+  HT t(8);
+  BOOST_CHECK_EQUAL(t.longestChain(), 0u);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_longest_chain_single_slot)
+{
+  HT t(1);
+  t.add("a", 1);
+  t.add("b", 2);
+  t.add("c", 3);
+  BOOST_CHECK_EQUAL(t.longestChain(), 3u);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_auto_rehash_on_load_factor)
+{
+  HT t(4);
+  t.setMaxLoadFactor(0.5);
+  t.add("a", 1);
+  t.add("b", 2);
+  // adding "c" would make lf = 3/4 = 0.75 > 0.5 → auto-rehash before insert
+  t.add("c", 3);
+  BOOST_CHECK(t.has("a"));
+  BOOST_CHECK(t.has("b"));
+  BOOST_CHECK(t.has("c"));
+  BOOST_CHECK_EQUAL(t.size(), 3u);
+  BOOST_CHECK_GT(t.slots(), 4u);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_auto_rehash_preserves_load_factor_below_limit)
+{
+  HT t(4);
+  t.setMaxLoadFactor(0.5);
+  for (int i = 0; i < 20; ++i)
+  {
+    t.add(std::to_string(i), i);
+  }
+  BOOST_CHECK_EQUAL(t.size(), 20u);
+  BOOST_CHECK_LE(t.loadFactor(), 0.5 + 1e-9);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_auto_rehash_on_chain_length)
+{
+  HT t(4);
+  t.setMaxChainLength(2);
+  t.add("a", 1);
+  t.add("b", 2);
+  // if "c" would land in a bucket already at length 2, auto-rehash
+  // after rehash all elements are redistributed, chain length check reapplied
+  t.add("c", 3);
+  t.add("d", 4);
+  BOOST_CHECK(t.has("a"));
+  BOOST_CHECK(t.has("b"));
+  BOOST_CHECK(t.has("c"));
+  BOOST_CHECK(t.has("d"));
+  BOOST_CHECK_EQUAL(t.size(), 4u);
+  BOOST_CHECK_LE(t.longestChain(), 2u);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_custom_resize_func)
+{
+  HT t(4);
+  t.setMaxLoadFactor(0.5);
+  t.setResizeFunc([](std::size_t n) { return n * 3 + 1; });
+  t.add("a", 1);
+  t.add("b", 2);
+  t.add("c", 3);
+  // rehash should have used n*3+1: 4*3+1=13
+  BOOST_CHECK_EQUAL(t.slots(), 13u);
+  BOOST_CHECK_EQUAL(t.size(), 3u);
+}
+
+BOOST_AUTO_TEST_CASE(hashtable_set_resize_func_preserved_in_copy)
+{
+  HT t(4);
+  t.setMaxLoadFactor(0.5);
+  t.setResizeFunc([](std::size_t n) { return n * 4; });
+  HT t2(t);
+  t2.add("a", 1);
+  t2.add("b", 2);
+  t2.add("c", 3);
+  // t2 should use its copied resize func
+  BOOST_CHECK_EQUAL(t2.size(), 3u);
+  BOOST_CHECK(t2.has("a"));
 }

@@ -3,9 +3,10 @@
 
 #include "../common/list.hpp"
 #include <cstddef>
+#include <functional>
+#include <limits>
 #include <stdexcept>
 #include <utility>
-#include <functional>
 
 namespace borisov
 {
@@ -22,6 +23,7 @@ namespace borisov
     using Bucket = List< std::pair< Key, Value > >;
     using iterator = HTIter< Key, Value, Hash, Equal >;
     using const_iterator = HTCIter< Key, Value, Hash, Equal >;
+    using ResizeFunc = std::function< std::size_t(std::size_t) >;
 
     explicit HashTable(std::size_t slots = 11);
     HashTable(const HashTable& other);
@@ -42,32 +44,21 @@ namespace borisov
     Value& at(const Key& k);
     const Value& at(const Key& k) const;
 
-    std::size_t size() const
-    {
-      return size_;
-    }
+    std::size_t size() const;
+    std::size_t slots() const;
+    bool empty() const;
 
-    std::size_t slots() const
-    {
-      return slots_;
-    }
+    double loadFactor() const;
+    std::size_t longestChain() const;
 
-    bool empty() const
-    {
-      return size_ == 0;
-    }
+    void setMaxLoadFactor(double limit);
+    void setMaxChainLength(std::size_t limit);
+    void setResizeFunc(ResizeFunc f);
 
     void clear();
 
-    Bucket& bucket(std::size_t idx)
-    {
-      return buckets_[idx];
-    }
-
-    const Bucket& bucket(std::size_t idx) const
-    {
-      return buckets_[idx];
-    }
+    Bucket& bucket(std::size_t idx);
+    const Bucket& bucket(std::size_t idx) const;
 
     iterator begin();
     iterator end();
@@ -83,28 +74,47 @@ namespace borisov
     std::size_t slots_;
     std::size_t size_;
     Bucket* buckets_;
-
     Hash hasher_;
     Equal equal_;
+    double maxLoadFactor_;
+    std::size_t maxChainLen_;
+    ResizeFunc resizeFunc_;
 
-    std::size_t bucketIndex(const Key& k) const
-    {
-      return hasher_(k) % slots_;
-    }
+    void swapWith(HashTable& other) noexcept;
+
+    std::size_t bucketIndex(const Key& k) const;
+
+    static std::size_t defaultResize(std::size_t n);
   };
+
+  template< class Key, class Value, class Hash, class Equal >
+  std::size_t HashTable< Key, Value, Hash, Equal >::defaultResize(std::size_t n)
+  {
+    return n < 10 ? 20 : n * 2 + 1;
+  }
 
   template< class Key, class Value, class Hash, class Equal >
   HashTable< Key, Value, Hash, Equal >::HashTable(std::size_t slots):
     slots_(slots == 0 ? 1 : slots),
     size_(0),
-    buckets_(new Bucket[slots_ == 0 ? 1 : slots_])
+    buckets_(new Bucket[slots_ == 0 ? 1 : slots_]),
+    hasher_(),
+    equal_(),
+    maxLoadFactor_(std::numeric_limits< double >::infinity()),
+    maxChainLen_(std::numeric_limits< std::size_t >::max()),
+    resizeFunc_(defaultResize)
   {}
 
   template< class Key, class Value, class Hash, class Equal >
   HashTable< Key, Value, Hash, Equal >::HashTable(const HashTable& other):
     slots_(other.slots_),
     size_(other.size_),
-    buckets_(new Bucket[other.slots_])
+    buckets_(new Bucket[other.slots_]),
+    hasher_(other.hasher_),
+    equal_(other.equal_),
+    maxLoadFactor_(other.maxLoadFactor_),
+    maxChainLen_(other.maxChainLen_),
+    resizeFunc_(other.resizeFunc_)
   {
     for (std::size_t i = 0; i < slots_; ++i)
     {
@@ -116,7 +126,12 @@ namespace borisov
   HashTable< Key, Value, Hash, Equal >::HashTable(HashTable&& other) noexcept:
     slots_(other.slots_),
     size_(other.size_),
-    buckets_(other.buckets_)
+    buckets_(other.buckets_),
+    hasher_(std::move(other.hasher_)),
+    equal_(std::move(other.equal_)),
+    maxLoadFactor_(other.maxLoadFactor_),
+    maxChainLen_(other.maxChainLen_),
+    resizeFunc_(std::move(other.resizeFunc_))
   {
     other.buckets_ = nullptr;
     other.size_ = 0;
@@ -136,10 +151,7 @@ namespace borisov
     if (this != &other)
     {
       HashTable tmp(other);
-      using std::swap;
-      swap(slots_, tmp.slots_);
-      swap(size_, tmp.size_);
-      swap(buckets_, tmp.buckets_);
+      swapWith(tmp);
     }
     return *this;
   }
@@ -154,6 +166,11 @@ namespace borisov
       slots_ = other.slots_;
       size_ = other.size_;
       buckets_ = other.buckets_;
+      hasher_ = std::move(other.hasher_);
+      equal_ = std::move(other.equal_);
+      maxLoadFactor_ = other.maxLoadFactor_;
+      maxChainLen_ = other.maxChainLen_;
+      resizeFunc_ = std::move(other.resizeFunc_);
       other.buckets_ = nullptr;
       other.size_ = 0;
       other.slots_ = 0;
@@ -162,27 +179,54 @@ namespace borisov
   }
 
   template< class Key, class Value, class Hash, class Equal >
+  void HashTable< Key, Value, Hash, Equal >::swapWith(HashTable& other) noexcept
+  {
+    using std::swap;
+    swap(slots_, other.slots_);
+    swap(size_, other.size_);
+    swap(buckets_, other.buckets_);
+    swap(hasher_, other.hasher_);
+    swap(equal_, other.equal_);
+    swap(maxLoadFactor_, other.maxLoadFactor_);
+    swap(maxChainLen_, other.maxChainLen_);
+    swap(resizeFunc_, other.resizeFunc_);
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  std::size_t HashTable< Key, Value, Hash, Equal >::bucketIndex(const Key& k) const
+  {
+    return hasher_(k) % slots_;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
   void HashTable< Key, Value, Hash, Equal >::add(const Key& k, const Value& v)
   {
-    if (size_ >= slots_)
+    if (slots_ > 0)
     {
-      throw std::overflow_error("HashTable is full; call rehash to expand");
+      const double newLf = static_cast< double >(size_ + 1) / static_cast< double >(slots_);
+      if (newLf > maxLoadFactor_)
+      {
+        rehash(resizeFunc_(slots_));
+      }
     }
-    std::size_t idx = bucketIndex(k);
-    buckets_[idx].pushBack(std::make_pair(k, v));
+    if (buckets_[bucketIndex(k)].size() >= maxChainLen_)
+    {
+      rehash(resizeFunc_(slots_));
+    }
+    buckets_[bucketIndex(k)].pushBack(std::make_pair(k, v));
     ++size_;
   }
 
   template< class Key, class Value, class Hash, class Equal >
   Value HashTable< Key, Value, Hash, Equal >::drop(const Key& k)
   {
-    std::size_t idx = bucketIndex(k);
+    const std::size_t idx = bucketIndex(k);
     Bucket& b = buckets_[idx];
     for (auto it = b.begin(); it != b.end(); ++it)
     {
       if (equal_(it->first, k))
       {
-        Value v = it->second;
+        const Value v = it->second;
         b.erase(it);
         --size_;
         return v;
@@ -194,7 +238,7 @@ namespace borisov
   template< class Key, class Value, class Hash, class Equal >
   bool HashTable< Key, Value, Hash, Equal >::has(const Key& k) const
   {
-    std::size_t idx = bucketIndex(k);
+    const std::size_t idx = bucketIndex(k);
     const Bucket& b = buckets_[idx];
     for (auto it = b.begin(); it != b.end(); ++it)
     {
@@ -218,7 +262,7 @@ namespace borisov
     {
       for (auto it = buckets_[i].begin(); it != buckets_[i].end(); ++it)
       {
-        std::size_t idx = hasher_(it->first) % slots;
+        const std::size_t idx = hasher_(it->first) % slots;
         newBuckets[idx].pushBack(*it);
       }
     }
@@ -230,7 +274,7 @@ namespace borisov
   template< class Key, class Value, class Hash, class Equal >
   Value& HashTable< Key, Value, Hash, Equal >::at(const Key& k)
   {
-    std::size_t idx = bucketIndex(k);
+    const std::size_t idx = bucketIndex(k);
     Bucket& b = buckets_[idx];
     for (auto it = b.begin(); it != b.end(); ++it)
     {
@@ -245,7 +289,7 @@ namespace borisov
   template< class Key, class Value, class Hash, class Equal >
   const Value& HashTable< Key, Value, Hash, Equal >::at(const Key& k) const
   {
-    std::size_t idx = bucketIndex(k);
+    const std::size_t idx = bucketIndex(k);
     const Bucket& b = buckets_[idx];
     for (auto it = b.begin(); it != b.end(); ++it)
     {
@@ -258,6 +302,67 @@ namespace borisov
   }
 
   template< class Key, class Value, class Hash, class Equal >
+  std::size_t HashTable< Key, Value, Hash, Equal >::size() const
+  {
+    return size_;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  std::size_t HashTable< Key, Value, Hash, Equal >::slots() const
+  {
+    return slots_;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  bool HashTable< Key, Value, Hash, Equal >::empty() const
+  {
+    return size_ == 0;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  double HashTable< Key, Value, Hash, Equal >::loadFactor() const
+  {
+    if (slots_ == 0)
+    {
+      return 0.0;
+    }
+    return static_cast< double >(size_) / static_cast< double >(slots_);
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  std::size_t HashTable< Key, Value, Hash, Equal >::longestChain() const
+  {
+    std::size_t longest = 0;
+    for (std::size_t i = 0; i < slots_; ++i)
+    {
+      const std::size_t len = buckets_[i].size();
+      if (len > longest)
+      {
+        longest = len;
+      }
+    }
+    return longest;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  void HashTable< Key, Value, Hash, Equal >::setMaxLoadFactor(double limit)
+  {
+    maxLoadFactor_ = limit;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  void HashTable< Key, Value, Hash, Equal >::setMaxChainLength(std::size_t limit)
+  {
+    maxChainLen_ = limit;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  void HashTable< Key, Value, Hash, Equal >::setResizeFunc(ResizeFunc f)
+  {
+    resizeFunc_ = f;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
   void HashTable< Key, Value, Hash, Equal >::clear()
   {
     for (std::size_t i = 0; i < slots_; ++i)
@@ -265,6 +370,20 @@ namespace borisov
       buckets_[i].clear();
     }
     size_ = 0;
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  typename HashTable< Key, Value, Hash, Equal >::Bucket&
+  HashTable< Key, Value, Hash, Equal >::bucket(std::size_t idx)
+  {
+    return buckets_[idx];
+  }
+
+  template< class Key, class Value, class Hash, class Equal >
+  const typename HashTable< Key, Value, Hash, Equal >::Bucket&
+  HashTable< Key, Value, Hash, Equal >::bucket(std::size_t idx) const
+  {
+    return buckets_[idx];
   }
 
   template< class Key, class Value, class Hash, class Equal >
@@ -356,7 +475,7 @@ namespace borisov
 
     HTIter operator++(int)
     {
-      HTIter old(*this);
+      const HTIter old(*this);
       ++(*this);
       return old;
     }
@@ -434,7 +553,7 @@ namespace borisov
 
     HTCIter operator++(int)
     {
-      HTCIter old(*this);
+      const HTCIter old(*this);
       ++(*this);
       return old;
     }
