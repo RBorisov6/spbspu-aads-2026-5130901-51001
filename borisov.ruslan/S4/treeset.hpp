@@ -16,7 +16,8 @@ namespace borisov
     class iterator
     {
     public:
-      iterator() {}
+      iterator()
+      {}
 
       explicit iterator(typename Tree::const_iterator it):
         it_(it)
@@ -26,8 +27,15 @@ namespace borisov
         it_(it)
       {}
 
-      const Key& operator*() const { return it_->first; }
-      const Key* operator->() const { return &(it_->first); }
+      const Key& operator*() const
+      {
+        return it_->first;
+      }
+
+      const Key* operator->() const
+      {
+        return &(it_->first);
+      }
 
       iterator& operator++()
       {
@@ -42,16 +50,21 @@ namespace borisov
         return old;
       }
 
-      bool operator==(const iterator& o) const { return it_ == o.it_; }
-      bool operator!=(const iterator& o) const { return !(*this == o); }
+      bool operator==(const iterator& o) const
+      {
+        return it_ == o.it_;
+      }
+
+      bool operator!=(const iterator& o) const
+      {
+        return !(*this == o);
+      }
 
     private:
       typename Tree::const_iterator it_;
     };
 
     using const_iterator = iterator;
-
-    TreeSet() {}
 
     void insert(const Key& k)
     {
@@ -73,14 +86,40 @@ namespace borisov
       return iterator(tree_.find(k));
     }
 
-    std::size_t size() const { return tree_.size(); }
-    bool empty() const { return tree_.empty(); }
-    void clear() { tree_.clear(); }
+    std::size_t size() const
+    {
+      return tree_.size();
+    }
 
-    iterator begin() const { return iterator(tree_.cbegin()); }
-    iterator end() const { return iterator(tree_.cend()); }
-    const_iterator cbegin() const { return begin(); }
-    const_iterator cend() const { return end(); }
+    bool empty() const
+    {
+      return tree_.empty();
+    }
+
+    void clear()
+    {
+      tree_.clear();
+    }
+
+    iterator begin() const
+    {
+      return iterator(tree_.cbegin());
+    }
+
+    iterator end() const
+    {
+      return iterator(tree_.cend());
+    }
+
+    const_iterator cbegin() const
+    {
+      return begin();
+    }
+
+    const_iterator cend() const
+    {
+      return end();
+    }
 
   private:
     Tree tree_;

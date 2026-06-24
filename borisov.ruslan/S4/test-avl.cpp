@@ -89,15 +89,9 @@ BOOST_AUTO_TEST_CASE(avl_balanced_height)
   {
     t.push(i, i);
   }
-  std::size_t h = 0;
-  const auto* root = t.find(32).operator->();
-  (void)root;
-  for (auto it = t.cbegin(); it != t.cend(); ++it)
-  {
-    ++h;
-  }
-  BOOST_CHECK_EQUAL(h, 64u);
-  BOOST_CHECK_LE(t.size(), 64u);
+  BOOST_CHECK_EQUAL(t.size(), 64u);
+  // AVL guarantee: height <= 1.44 * log2(N+2); for N=64 that is < 10
+  BOOST_CHECK_LE(t.height(), 10u);
 }
 
 BOOST_AUTO_TEST_CASE(avl_copy)

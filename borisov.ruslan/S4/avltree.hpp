@@ -105,7 +105,7 @@ namespace borisov
 
     Value& get(const Key& k)
     {
-      Node* n = findOrNull(k);
+      Node* const n = findOrNull(k);
       if (!n)
       {
         throw std::out_of_range("AVLTree: key not found");
@@ -115,7 +115,7 @@ namespace borisov
 
     const Value& get(const Key& k) const
     {
-      const Node* n = findOrNullConst(k);
+      const Node* const n = findOrNullConst(k);
       if (!n)
       {
         throw std::out_of_range("AVLTree: key not found");
@@ -125,7 +125,7 @@ namespace borisov
 
     Value drop(const Key& k)
     {
-      Node* n = findOrNull(k);
+      Node* const n = findOrNull(k);
       if (!n)
       {
         throw std::out_of_range("AVLTree: key not found");
@@ -147,8 +147,20 @@ namespace borisov
       size_ = 0;
     }
 
-    bool empty() const { return size_ == 0; }
-    std::size_t size() const { return size_; }
+    bool empty() const
+    {
+      return size_ == 0;
+    }
+
+    std::size_t size() const
+    {
+      return size_;
+    }
+
+    std::size_t height() const
+    {
+      return static_cast< std::size_t >(nodeHeight(root_));
+    }
 
     iterator begin()
     {
@@ -163,7 +175,10 @@ namespace borisov
       return iterator(n);
     }
 
-    iterator end() { return iterator(nullptr); }
+    iterator end()
+    {
+      return iterator(nullptr);
+    }
 
     const_iterator begin() const
     {
@@ -178,12 +193,30 @@ namespace borisov
       return const_iterator(n);
     }
 
-    const_iterator end() const { return const_iterator(nullptr); }
-    const_iterator cbegin() const { return begin(); }
-    const_iterator cend() const { return end(); }
+    const_iterator end() const
+    {
+      return const_iterator(nullptr);
+    }
 
-    iterator find(const Key& k) { return iterator(findOrNull(k)); }
-    const_iterator find(const Key& k) const { return const_iterator(findOrNullConst(k)); }
+    const_iterator cbegin() const
+    {
+      return begin();
+    }
+
+    const_iterator cend() const
+    {
+      return end();
+    }
+
+    iterator find(const Key& k)
+    {
+      return iterator(findOrNull(k));
+    }
+
+    const_iterator find(const Key& k) const
+    {
+      return const_iterator(findOrNullConst(k));
+    }
 
   private:
     Node* root_;
@@ -235,7 +268,10 @@ namespace borisov
       return nullptr;
     }
 
-    static int nodeHeight(const Node* n) { return n ? n->height_ : 0; }
+    static int nodeHeight(const Node* n)
+    {
+      return n ? n->height_ : 0;
+    }
 
     static void updateHeight(Node* n)
     {
@@ -254,7 +290,7 @@ namespace borisov
 
     Node* rotateLeft(Node* p)
     {
-      Node* n = p->right_;
+      Node* const n = p->right_;
       p->right_ = n->left_;
       if (n->left_)
       {
@@ -269,7 +305,7 @@ namespace borisov
 
     Node* rotateRight(Node* p)
     {
-      Node* n = p->left_;
+      Node* const n = p->left_;
       p->left_ = n->right_;
       if (n->right_)
       {
@@ -329,7 +365,7 @@ namespace borisov
         n->data_.second = v;
         return n;
       }
-      Node* result = balance(n);
+      Node* const result = balance(n);
       result->parent_ = parent;
       return result;
     }
@@ -358,7 +394,7 @@ namespace borisov
       }
       else if (!n->left_ || !n->right_)
       {
-        Node* child = n->left_ ? n->left_ : n->right_;
+        Node* const child = n->left_ ? n->left_ : n->right_;
         delete n;
         --size_;
         if (child)
@@ -382,7 +418,7 @@ namespace borisov
           n->right_->parent_ = n;
         }
       }
-      Node* result = balance(n);
+      Node* const result = balance(n);
       result->parent_ = parent;
       return result;
     }
@@ -395,10 +431,19 @@ namespace borisov
     using Node = detail::AVLNode< Key, Value >;
     using value_type = std::pair< Key, Value >;
 
-    AVLIterator(): node_(nullptr) {}
+    AVLIterator():
+      node_(nullptr)
+    {}
 
-    value_type& operator*() const { return node_->data_; }
-    value_type* operator->() const { return &(node_->data_); }
+    value_type& operator*() const
+    {
+      return node_->data_;
+    }
+
+    value_type* operator->() const
+    {
+      return &(node_->data_);
+    }
 
     AVLIterator& operator++()
     {
@@ -425,13 +470,20 @@ namespace borisov
 
     AVLIterator operator++(int)
     {
-      AVLIterator old(*this);
+      const AVLIterator old(*this);
       ++(*this);
       return old;
     }
 
-    bool operator==(const AVLIterator& o) const { return node_ == o.node_; }
-    bool operator!=(const AVLIterator& o) const { return !(*this == o); }
+    bool operator==(const AVLIterator& o) const
+    {
+      return node_ == o.node_;
+    }
+
+    bool operator!=(const AVLIterator& o) const
+    {
+      return !(*this == o);
+    }
 
   private:
     template< class K, class V, class C >
@@ -442,7 +494,9 @@ namespace borisov
 
     Node* node_;
 
-    explicit AVLIterator(Node* n): node_(n) {}
+    explicit AVLIterator(Node* n):
+      node_(n)
+    {}
   };
 
   template< class Key, class Value >
@@ -452,12 +506,23 @@ namespace borisov
     using Node = detail::AVLNode< Key, Value >;
     using value_type = std::pair< Key, Value >;
 
-    AVLConstIterator(): node_(nullptr) {}
+    AVLConstIterator():
+      node_(nullptr)
+    {}
 
-    AVLConstIterator(const AVLIterator< Key, Value >& it): node_(it.node_) {}
+    AVLConstIterator(const AVLIterator< Key, Value >& it):
+      node_(it.node_)
+    {}
 
-    const value_type& operator*() const { return node_->data_; }
-    const value_type* operator->() const { return &(node_->data_); }
+    const value_type& operator*() const
+    {
+      return node_->data_;
+    }
+
+    const value_type* operator->() const
+    {
+      return &(node_->data_);
+    }
 
     AVLConstIterator& operator++()
     {
@@ -484,13 +549,20 @@ namespace borisov
 
     AVLConstIterator operator++(int)
     {
-      AVLConstIterator old(*this);
+      const AVLConstIterator old(*this);
       ++(*this);
       return old;
     }
 
-    bool operator==(const AVLConstIterator& o) const { return node_ == o.node_; }
-    bool operator!=(const AVLConstIterator& o) const { return !(*this == o); }
+    bool operator==(const AVLConstIterator& o) const
+    {
+      return node_ == o.node_;
+    }
+
+    bool operator!=(const AVLConstIterator& o) const
+    {
+      return !(*this == o);
+    }
 
   private:
     template< class K, class V, class C >
@@ -498,7 +570,9 @@ namespace borisov
 
     const Node* node_;
 
-    explicit AVLConstIterator(const Node* n): node_(n) {}
+    explicit AVLConstIterator(const Node* n):
+      node_(n)
+    {}
   };
 }
 
