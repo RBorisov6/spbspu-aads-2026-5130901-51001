@@ -2,9 +2,9 @@
 #define BORISOV_LIST_HPP
 
 #include <cstddef>
+#include <functional>
 #include <utility>
 #include <stdexcept>
-
 
 namespace borisov
 {
@@ -52,6 +52,23 @@ namespace borisov
 
     void swap(List& other) noexcept;
 
+    void splice(iterator pos, List& other) noexcept;
+    void splice(iterator pos, List& other, iterator it) noexcept;
+    void splice(iterator pos, List& other, iterator first, iterator last) noexcept;
+
+    void sort() noexcept;
+
+    template< class Compare >
+    void sort(Compare cmp) noexcept;
+
+    void merge(List& other) noexcept;
+
+    template< class Compare >
+    void merge(List& other, Compare cmp) noexcept;
+
+    template< class Pred >
+    iterator partition(Pred pred) noexcept;
+
   private:
     struct Node
     {
@@ -69,6 +86,9 @@ namespace borisov
     Node* head_;
     Node* tail_;
     std::size_t size_;
+
+    void unlinkNode(Node* n) noexcept;
+    void linkBefore(iterator pos, Node* n) noexcept;
 
     friend class LIter<T>;
     friend class LCIter<T>;
@@ -428,6 +448,166 @@ namespace borisov
     swap(head_, other.head_);
     swap(tail_, other.tail_);
     swap(size_, other.size_);
+  }
+
+  template <class T>
+  void List<T>::unlinkNode(Node* n) noexcept
+  {
+    if (n->prev_ != nullptr)
+    {
+      n->prev_->next_ = n->next_;
+    }
+    else
+    {
+      head_ = n->next_;
+    }
+    if (n->next_ != nullptr)
+    {
+      n->next_->prev_ = n->prev_;
+    }
+    else
+    {
+      tail_ = n->prev_;
+    }
+    n->prev_ = nullptr;
+    n->next_ = nullptr;
+    --size_;
+  }
+
+  template <class T>
+  void List<T>::linkBefore(iterator pos, Node* n) noexcept
+  {
+    Node* const curr = pos.node_;
+    Node* const prev = (curr != nullptr) ? curr->prev_ : tail_;
+    n->prev_ = prev;
+    n->next_ = curr;
+    if (prev != nullptr)
+    {
+      prev->next_ = n;
+    }
+    else
+    {
+      head_ = n;
+    }
+    if (curr != nullptr)
+    {
+      curr->prev_ = n;
+    }
+    else
+    {
+      tail_ = n;
+    }
+    ++size_;
+  }
+
+  template <class T>
+  void List<T>::splice(iterator pos, List& other, iterator it) noexcept
+  {
+    if (it == other.end())
+    {
+      return;
+    }
+    other.unlinkNode(it.node_);
+    linkBefore(pos, it.node_);
+  }
+
+  template <class T>
+  void List<T>::splice(iterator pos, List& other, iterator first, iterator last) noexcept
+  {
+    iterator it = first;
+    while (it != last)
+    {
+      iterator next = it;
+      ++next;
+      splice(pos, other, it);
+      it = next;
+    }
+  }
+
+  template <class T>
+  void List<T>::splice(iterator pos, List& other) noexcept
+  {
+    splice(pos, other, other.begin(), other.end());
+  }
+
+  template <class T>
+  template< class Compare >
+  void List<T>::merge(List& other, Compare cmp) noexcept
+  {
+    iterator it = begin();
+    iterator oit = other.begin();
+    while (it != end() && oit != other.end())
+    {
+      if (cmp(*oit, *it))
+      {
+        iterator next = oit;
+        ++next;
+        splice(it, other, oit);
+        oit = next;
+      }
+      else
+      {
+        ++it;
+      }
+    }
+    splice(end(), other);
+  }
+
+  template <class T>
+  void List<T>::merge(List& other) noexcept
+  {
+    merge(other, std::less< T >());
+  }
+
+  template <class T>
+  template< class Compare >
+  void List<T>::sort(Compare cmp) noexcept
+  {
+    if (size_ <= 1)
+    {
+      return;
+    }
+    List half;
+    iterator mid = begin();
+    const std::size_t halfSize = size_ / 2;
+    for (std::size_t i = 0; i < halfSize; ++i)
+    {
+      ++mid;
+    }
+    half.splice(half.end(), *this, mid, end());
+    sort(cmp);
+    half.sort(cmp);
+    merge(half, cmp);
+  }
+
+  template <class T>
+  void List<T>::sort() noexcept
+  {
+    sort(std::less< T >());
+  }
+
+  template <class T>
+  template< class Pred >
+  typename List<T>::iterator List<T>::partition(Pred pred) noexcept
+  {
+    List trueList;
+    List falseList;
+    while (!empty())
+    {
+      iterator it = begin();
+      if (pred(*it))
+      {
+        trueList.splice(trueList.end(), *this, it);
+      }
+      else
+      {
+        falseList.splice(falseList.end(), *this, it);
+      }
+    }
+    const iterator result = falseList.begin();
+    trueList.splice(trueList.end(), falseList);
+    swap(trueList);
+    return result;
   }
 
   template <class T>
