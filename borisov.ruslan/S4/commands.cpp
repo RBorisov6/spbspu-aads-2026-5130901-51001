@@ -42,13 +42,13 @@ namespace borisov
       out << INVALID << '\n';
       return;
     }
-    if (!table.has(name1) || !table.has(name2) || table.has(newName))
+    if (!table.has(name1) || !table.has(name2))
     {
       out << INVALID << '\n';
       return;
     }
-    const Dict& d1 = table.get(name1);
-    const Dict& d2 = table.get(name2);
+    Dict d1 = table.get(name1);
+    Dict d2 = table.get(name2);
     Dict result;
     for (auto it = d1.cbegin(); it != d1.cend(); ++it)
     {
@@ -70,13 +70,13 @@ namespace borisov
       out << INVALID << '\n';
       return;
     }
-    if (!table.has(name1) || !table.has(name2) || table.has(newName))
+    if (!table.has(name1) || !table.has(name2))
     {
       out << INVALID << '\n';
       return;
     }
-    const Dict& d1 = table.get(name1);
-    const Dict& d2 = table.get(name2);
+    Dict d1 = table.get(name1);
+    Dict d2 = table.get(name2);
     Dict result;
     for (auto it = d1.cbegin(); it != d1.cend(); ++it)
     {
@@ -98,13 +98,13 @@ namespace borisov
       out << INVALID << '\n';
       return;
     }
-    if (!table.has(name1) || !table.has(name2) || table.has(newName))
+    if (!table.has(name1) || !table.has(name2))
     {
       out << INVALID << '\n';
       return;
     }
-    const Dict& d1 = table.get(name1);
-    const Dict& d2 = table.get(name2);
+    Dict d1 = table.get(name1);
+    Dict d2 = table.get(name2);
     Dict result;
     for (auto it = d1.cbegin(); it != d1.cend(); ++it)
     {
